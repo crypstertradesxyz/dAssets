@@ -554,12 +554,23 @@ export const MintModal: React.FC<MintModalProps> = ({
                   </motion.div>
                 )}
 
+                {/* Warning if user has no tokens to redeem */}
+                {activeTab === 'redeem' && userHolding <= 0 && (
+                  <div className="p-3 rounded-md bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs flex items-center gap-2">
+                    <span>You do not currently hold any {asset.symbol} tokens. Mint some first to unlock redemption.</span>
+                  </div>
+                )}
+
                 {/* Action Button */}
                 <motion.button
                   whileHover={{ scale: 1.01 }}
                   whileTap={{ scale: 0.99 }}
                   onClick={handleExecute}
-                  disabled={isProcessing || amountNumber <= 0 || (activeTab === 'redeem' && userHolding <= 0)}
+                  disabled={
+                    isProcessing || 
+                    amountNumber <= 0 || 
+                    (activeTab === 'redeem' && (userHolding <= 0 || amountNumber > userHolding))
+                  }
                   className="w-full flex items-center justify-center gap-2 bg-white hover:bg-slate-200 disabled:bg-white/[0.06] disabled:text-slate-600 text-black font-semibold py-3 px-4 rounded-md text-xs transition shadow-sm"
                 >
                   {isProcessing ? (
@@ -574,6 +585,10 @@ export const MintModal: React.FC<MintModalProps> = ({
                       <Zap className="w-3.5 h-3.5 fill-current text-black" />
                       <span>Confirm Mint ({asset.symbol})</span>
                     </>
+                  ) : userHolding <= 0 ? (
+                    <span>No {asset.symbol} to Redeem</span>
+                  ) : amountNumber > userHolding ? (
+                    <span>Amount Exceeds Position ({userHolding} Max)</span>
                   ) : (
                     <>
                       <Coins className="w-3.5 h-3.5 text-black" />
