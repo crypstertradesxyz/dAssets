@@ -469,4 +469,16 @@ export class Web3Service {
       this.refreshBalances(this.state.address);
     }
   }
+
+  public recordReturnLiquidity(symbol: string, assetAmount: number, usdcAmount: number) {
+    const currentHolding = this.state.holdings[symbol] || 0;
+    this.state.holdings[symbol] = currentHolding + assetAmount;
+    const currentUsdc = parseFloat(this.state.balanceUsdc || '0');
+    this.state.balanceUsdc = (currentUsdc + usdcAmount).toFixed(2);
+    this.notify();
+
+    if (this.state.address) {
+      this.refreshBalances(this.state.address);
+    }
+  }
 }

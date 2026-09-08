@@ -10,12 +10,14 @@ import {
   Layers, 
   ArrowUpRight,
   Zap,
-  Sparkles
+  Sparkles,
+  ArrowDownRight
 } from 'lucide-react';
 import { LeveragedAsset, WalletState, LiquidityPool } from '../types';
 import { BridgeService } from '../services/bridge';
 import { CopyButton } from './CopyButton';
 import { CreatePoolModal } from './CreatePoolModal';
+import { RemoveLiquidityModal } from './RemoveLiquidityModal';
 import { TokenLogo } from './TokenLogo';
 import { getUniswapSwapUrl, getBlockscoutAddressUrl } from '../utils/uniswap';
 
@@ -37,6 +39,7 @@ export const PoolsView: React.FC<PoolsViewProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<'all' | 'majors' | 'high_apr' | 'shorts'>('all');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedAssetForPool, setSelectedAssetForPool] = useState<LeveragedAsset | undefined>(undefined);
+  const [removingPool, setRemovingPool] = useState<LiquidityPool | null>(null);
 
   useEffect(() => {
     const bridge = BridgeService.getInstance();
@@ -253,11 +256,23 @@ export const PoolsView: React.FC<PoolsViewProps> = ({
                     <div className="flex items-center gap-2 pt-1">
                       <button
                         onClick={() => handleOpenCreate(asset)}
-                        className="flex-1 bg-white/[0.06] hover:bg-white/[0.12] text-white py-2 px-3 rounded-md text-xs font-semibold transition flex items-center justify-center gap-1.5"
+                        className="flex-1 bg-white/[0.06] hover:bg-white/[0.12] text-white py-2 px-3 rounded-md text-xs font-semibold transition flex items-center justify-center gap-1.5 cursor-pointer"
                       >
                         <Plus className="w-3.5 h-3.5 text-rh-green" />
-                        <span>Add Liquidity</span>
+                        <span>Add LP</span>
                       </button>
+
+                      {wallet.isConnected && (
+                        <button
+                          onClick={() => setRemovingPool(pool)}
+                          className="bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 border border-red-500/25 py-2 px-2.5 rounded-md text-xs font-semibold transition flex items-center justify-center gap-1 cursor-pointer"
+                          title="Remove LP from this pool"
+                        >
+                          <ArrowDownRight className="w-3.5 h-3.5" />
+                          <span>Remove</span>
+                        </button>
+                      )}
+
                       <a
                         href={getUniswapSwapUrl(asset?.tokenAddress)}
                         target="_blank"
@@ -446,14 +461,24 @@ export const PoolsView: React.FC<PoolsViewProps> = ({
                             </a>
                             <button
                               onClick={() => handleOpenCreate(asset)}
-                              className="bg-white/[0.06] hover:bg-white/[0.12] text-slate-200 px-3 py-1.5 rounded text-xs font-semibold transition"
+                              className="bg-white/[0.06] hover:bg-white/[0.12] text-slate-200 px-3 py-1.5 rounded text-xs font-semibold transition cursor-pointer"
                             >
                               Add LP
                             </button>
+                            {wallet.isConnected && (
+                              <button
+                                onClick={() => setRemovingPool(pool)}
+                                className="bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 border border-red-500/25 px-2.5 py-1.5 rounded text-xs font-semibold transition flex items-center gap-1 cursor-pointer"
+                                title="Remove LP from this pool"
+                              >
+                                <ArrowDownRight className="w-3 h-3" />
+                                <span>Remove</span>
+                              </button>
+                            )}
                             {asset && (
                               <button
                                 onClick={() => onMintAsset(asset)}
-                                className="bg-rh-green/10 hover:bg-rh-green/20 text-rh-green px-3 py-1.5 rounded text-xs font-semibold transition border border-rh-green/20"
+                                className="bg-rh-green/10 hover:bg-rh-green/20 text-rh-green px-3 py-1.5 rounded text-xs font-semibold transition border border-rh-green/20 cursor-pointer"
                               >
                                 Mint
                               </button>
@@ -488,7 +513,7 @@ export const PoolsView: React.FC<PoolsViewProps> = ({
         </div>
       </div>
 
-      {/* Modal */}
+      {/* Create Pool Modal */}
       {isCreateModalOpen && (
         <CreatePoolModal
           assets={assets}
@@ -498,6 +523,18 @@ export const PoolsView: React.FC<PoolsViewProps> = ({
           onOpenWalletModal={onOpenWalletModal}
           onPoolCreated={(newPool) => {
             setPools(prev => [newPool, ...prev]);
+          }}
+        />
+      )}
+
+      {/* Remove Liquidity Modal */}
+      {removingPool && (
+        <RemoveLiquidityModal
+          pool={removingPool}
+          wallet={wallet}
+          onClose={() => setRemovingPool(null)}
+          onSuccess={() => {
+            setPools(BridgeService.getInstance().getPools());
           }}
         />
       )}

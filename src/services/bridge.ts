@@ -174,5 +174,40 @@ export class BridgeService {
     this.notifyPools();
     return pool;
   }
+
+  public removeLiquidity(
+    poolAddress: string,
+    percentage: number = 100
+  ): { assetAmount: number; usdcAmount: number; poolRemoved: boolean } | null {
+    const idx = this.pools.findIndex(
+      p => p.poolAddress.toLowerCase() === poolAddress.toLowerCase()
+    );
+    if (idx === -1) return null;
+
+    const pool = this.pools[idx];
+    const fraction = Math.min(Math.max(percentage / 100, 0), 1);
+    const returnedAsset = Number((pool.assetAmount * fraction).toFixed(4));
+    const returnedUsdc = Number((pool.usdcAmount * fraction).toFixed(2));
+
+    const poolRemoved = fraction >= 0.999;
+    if (poolRemoved) {
+      this.pools.splice(idx, 1);
+    } else {
+      pool.assetAmount = Math.max(0, Number((pool.assetAmount - returnedAsset).toFixed(4)));
+      pool.usdcAmount = Math.max(0, Number((pool.usdcAmount - returnedUsdc).toFixed(2)));
+      pool.tvlUsd = Number((pool.usdcAmount * 2).toFixed(2));
+    }
+
+    if (typeof window !== 'undefined' && window.localStorage) {
+      try {
+        localStorage.setItem('dassets_uniswap_pools', JSON.stringify(this.pools));
+      } catch (e) {
+        console.warn('Could not persist pools to localStorage:', e);
+      }
+    }
+    this.notifyPools();
+
+    return { assetAmount: returnedAsset, usdcAmount: returnedUsdc, poolRemoved };
+  }
 }
 

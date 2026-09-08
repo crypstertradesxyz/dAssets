@@ -22,6 +22,7 @@ import { Web3Service } from '../services/web3';
 import { TokenLogo } from './TokenLogo';
 import { CopyButton } from './CopyButton';
 import { getUniswapSwapUrl, getBlockscoutAddressUrl } from '../utils/uniswap';
+import { RemoveLiquidityModal } from './RemoveLiquidityModal';
 
 interface PortfolioViewProps {
   assets: LeveragedAsset[];
@@ -42,6 +43,7 @@ export const PortfolioView: React.FC<PortfolioViewProps> = ({
 }) => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<'all' | 'tokens' | 'pools' | 'gas'>('all');
+  const [removingPool, setRemovingPool] = useState<LiquidityPool | null>(null);
 
   // Estimate ETH spot price from available ETH assets (or fallback $2,800)
   const ethSpotPrice = useMemo(() => {
@@ -591,6 +593,16 @@ export const PortfolioView: React.FC<PortfolioViewProps> = ({
                             </div>
 
                             <div className="flex items-center gap-2">
+                              {/* Remove Liquidity Button */}
+                              <button
+                                onClick={() => setRemovingPool(pool)}
+                                className="bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 border border-red-500/25 px-2.5 py-1.5 rounded-md text-xs font-semibold transition flex items-center gap-1 cursor-pointer"
+                                title="Withdraw or Remove Liquidity"
+                              >
+                                <ArrowDownRight className="w-3.5 h-3.5" />
+                                <span>Remove LP</span>
+                              </button>
+
                               {/* Direct Uniswap Trade on Robinhood Chain */}
                               <a
                                 href={getUniswapSwapUrl(asset?.tokenAddress)}
@@ -689,6 +701,14 @@ export const PortfolioView: React.FC<PortfolioViewProps> = ({
 
           </div>
         </>
+      )}
+
+      {removingPool && (
+        <RemoveLiquidityModal
+          pool={removingPool}
+          wallet={wallet}
+          onClose={() => setRemovingPool(null)}
+        />
       )}
 
     </div>
