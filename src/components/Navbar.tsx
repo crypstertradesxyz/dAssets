@@ -40,7 +40,6 @@ export const Navbar: React.FC<NavbarProps> = ({
   };
 
   const navItems: { view: AppView; label: string; href: string; badge?: string; pulse?: boolean }[] = [
-    { view: 'home', label: 'Overview', href: '/' },
     { view: 'markets', label: 'Markets (270+)', href: '/markets' },
     { view: 'pools', label: 'Pools', href: '/pools', badge: 'Uniswap' },
     { view: 'portfolio', label: 'Portfolio', href: '/portfolio' },
