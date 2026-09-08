@@ -8,7 +8,6 @@ import {
   ShieldCheck, 
   Zap, 
   Clock, 
-  Server,
   Play,
   Pause,
   Layers
@@ -138,24 +137,7 @@ export const KeeperTerminal: React.FC = () => {
     <div className="space-y-4 font-mono text-xs">
       
       {/* Metrics Row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        
-        <div className="bg-[#090C10] border border-white/[0.08] rounded-lg p-3.5 space-y-1">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] uppercase text-slate-500 font-sans font-medium">Keeper Status</span>
-            <span className="flex items-center gap-1 text-[10px] text-rh-green font-bold">
-              <span className="w-1.5 h-1.5 rounded-full bg-rh-green animate-pulse" />
-              <span>LIVE</span>
-            </span>
-          </div>
-          <div className="text-sm font-bold text-white flex items-center gap-1.5">
-            <Server className="w-3.5 h-3.5 text-slate-400" />
-            <span>Railway Cloud Worker</span>
-          </div>
-          <span className="text-[10px] text-slate-400 font-sans block truncate">
-            {RAILWAY_URL.replace('https://', '')}
-          </span>
-        </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
 
         <div className="bg-[#090C10] border border-white/[0.08] rounded-lg p-3.5 space-y-1">
           <div className="flex items-center justify-between">
@@ -198,7 +180,7 @@ export const KeeperTerminal: React.FC = () => {
             {status?.totalUpdates || logs.filter(l => l.type === 'CONFIRMED').length || '12+'} On-Chain Txs
           </div>
           <span className="text-[10px] text-slate-400 font-sans">
-            Source: {dataSource === 'railway' ? 'Railway API Stream' : 'Robinhood RPC Events'}
+            Robinhood Chain Mainnet (4663)
           </span>
         </div>
 
@@ -254,7 +236,7 @@ export const KeeperTerminal: React.FC = () => {
         <div className="p-4 font-mono text-[11px] leading-relaxed max-h-80 overflow-y-auto space-y-1.5 scrollbar-thin scrollbar-thumb-white/10 select-text">
           {isLoading ? (
             <div className="text-slate-500 py-6 text-center animate-pulse">
-              Connecting to Railway Keeper and Robinhood Chain RPC...
+              Connecting to Oracle Keeper and Robinhood Chain RPC...
             </div>
           ) : logs.length === 0 ? (
             <div className="text-slate-500 py-6 text-center">

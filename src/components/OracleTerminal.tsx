@@ -344,7 +344,7 @@ export const OracleTerminal: React.FC<OracleTerminalProps> = ({
             </h3>
           </div>
           <div className="flex items-center space-x-2 text-[11px] text-slate-400 font-mono">
-            <span className="text-rh-green">Railway Cloud Worker</span>
+            <span className="text-rh-green">Autonomous Keeper Node</span>
             <span>•</span>
             <span>Robinhood Chain Mainnet (4663)</span>
           </div>
