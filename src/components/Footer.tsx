@@ -72,6 +72,13 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
               Pools
             </a>
             <a
+              href="/info"
+              onClick={(e) => handleInternalNav('info', e)}
+              className="text-slate-400 hover:text-white transition"
+            >
+              Info & FAQ
+            </a>
+            <a
               href="/terminal"
               onClick={(e) => handleInternalNav('terminal', e)}
               className="text-slate-400 hover:text-white transition"

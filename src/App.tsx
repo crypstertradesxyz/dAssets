@@ -14,6 +14,7 @@ import { LeveragedAsset, WalletState, AppView } from './types';
 import { PoolsView } from './components/PoolsView';
 import { PortfolioView } from './components/PortfolioView';
 import { TradeView } from './components/TradeView';
+import { InfoView } from './components/InfoView';
 import { INITIAL_ASSETS } from './data/bounceAssets';
 import { OracleService } from './services/oracle';
 import { Web3Service } from './services/web3';
@@ -217,15 +218,21 @@ export const App: React.FC = () => {
           </main>
         )}
 
+        {activeView === 'info' && (
+          <main>
+            <InfoView initialTab="faq" onNavigate={navigateTo} />
+          </main>
+        )}
+
         {activeView === 'bridge' && (
           <main>
-            <BridgeExplorer />
+            <InfoView initialTab="bridge" onNavigate={navigateTo} />
           </main>
         )}
 
         {activeView === 'contracts' && (
           <main>
-            <ContractsView />
+            <InfoView initialTab="contracts" onNavigate={navigateTo} />
           </main>
         )}
       </div>

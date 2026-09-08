@@ -21,6 +21,8 @@ export function getUrlForView(view: AppView, assetSymbol?: string): string {
       return '/bridge';
     case 'contracts':
       return '/contracts';
+    case 'info':
+      return '/info';
     default:
       return '/';
   }
@@ -74,17 +76,22 @@ export function parseCurrentUrl(
     return { view: 'portfolio' };
   }
 
-  // 4. Bridge
+  // 4. Info / FAQ / Docs
+  if (cleanPath === '/info' || cleanPath === '/faq' || cleanPath === '/docs' || cleanPath === '/guide' || cleanPath === '/about') {
+    return { view: 'info' };
+  }
+
+  // 5. Bridge
   if (cleanPath === '/bridge' || cleanPath === '/hyperlane' || cleanPath === '/warp') {
     return { view: 'bridge' };
   }
 
-  // 5. Contracts
+  // 6. Contracts
   if (cleanPath === '/contracts' || cleanPath === '/contract' || cleanPath === '/addresses') {
     return { view: 'contracts' };
   }
 
-  // 6. Terminal (e.g. /terminal, /terminal/dBTC3L, /terminal/btc, /terminal/sol5l)
+  // 7. Terminal (e.g. /terminal, /terminal/dBTC3L, /terminal/btc, /terminal/sol5l)
   if (cleanPath.startsWith('/terminal') || cleanPath.startsWith('/oracle') || cleanPath.startsWith('/feed')) {
     const parts = cleanPath.split('/').filter(Boolean);
     // parts[0] is 'terminal', parts[1] might be 'dbtc3l' or 'btc'
@@ -156,6 +163,10 @@ export function updatePageMetadata(view: AppView, asset?: LeveragedAsset) {
     case 'contracts':
       title = 'Verified Smart Contracts (Chain 4663) | dAssets';
       desc = 'Factory registry, token addresses, and blockscout explorer links on Robinhood Chain Mainnet.';
+      break;
+    case 'info':
+      title = 'Protocol Info, FAQ & Architecture Guide | dAssets';
+      desc = 'Comprehensive guide to synthetic leveraged tokens on Robinhood Chain, 0% liquidation mechanics, verified smart contracts, and Hyperlane bridge architecture.';
       break;
     case 'home':
     default:

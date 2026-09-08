@@ -45,8 +45,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     { view: 'pools', label: 'Pools', href: '/pools' },
     { view: 'portfolio', label: 'Portfolio', href: '/portfolio' },
     { view: 'terminal', label: 'Oracle Feed', href: '/terminal', pulse: true },
-    { view: 'bridge', label: 'Hyperlane', href: '/bridge' },
-    { view: 'contracts', label: 'Contracts', href: '/contracts' },
+    { view: 'info', label: 'Info & FAQ', href: '/info' },
   ];
 
   return (
@@ -74,7 +73,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 href={item.href}
                 onClick={(e) => handleNav(item.view, e)}
                 className={`px-3 py-1.5 rounded-md text-xs font-medium transition flex items-center gap-1.5 ${
-                  activeView === item.view
+                  activeView === item.view || (item.view === 'info' && (activeView === 'contracts' || activeView === 'bridge'))
                     ? 'text-white bg-white/[0.08]'
                     : 'text-slate-400 hover:text-slate-200'
                 }`}
@@ -186,7 +185,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               href={item.href}
               onClick={(e) => handleNav(item.view, e)}
               className={`block px-3 py-2 rounded-lg text-sm font-medium transition flex items-center justify-between ${
-                activeView === item.view
+                activeView === item.view || (item.view === 'info' && (activeView === 'contracts' || activeView === 'bridge'))
                   ? 'text-white bg-white/[0.10]'
                   : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]'
               }`}
