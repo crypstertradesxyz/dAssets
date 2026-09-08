@@ -75,6 +75,14 @@ export class Web3Service {
   }
 
   public enableDemoMode() {
+    const savedHoldings = localStorage.getItem('dassets_holdings');
+    let loadedHoldings = this.state.holdings || {};
+    if (savedHoldings) {
+      try {
+        loadedHoldings = JSON.parse(savedHoldings);
+      } catch (e) {}
+    }
+
     this.state = {
       isConnected: true,
       address: '0x71C...89A4',
@@ -83,7 +91,7 @@ export class Web3Service {
       balanceEth: '14.85',
       balanceUsdc: '50,000.00',
       isDemo: true,
-      holdings: this.state.holdings || {},
+      holdings: loadedHoldings,
     };
     localStorage.setItem('dassets_demo_mode', 'true');
     this.notify();
@@ -126,6 +134,14 @@ export class Web3Service {
       const chainIdHex = await eth.request({ method: 'eth_chainId' });
       const currentChainId = parseInt(chainIdHex, 16);
 
+      const savedHoldings = localStorage.getItem('dassets_holdings');
+      let loadedHoldings = this.state.holdings || {};
+      if (savedHoldings) {
+        try {
+          loadedHoldings = JSON.parse(savedHoldings);
+        } catch (e) {}
+      }
+
       this.state = {
         isConnected: true,
         address: accounts[0] ? `${accounts[0].slice(0, 6)}...${accounts[0].slice(-4)}` : '0xUnknown',
@@ -134,7 +150,7 @@ export class Web3Service {
         balanceEth: '4.20',
         balanceUsdc: '12,450.00',
         isDemo: false,
-        holdings: this.state.holdings || {},
+        holdings: loadedHoldings,
       };
       localStorage.removeItem('dassets_demo_mode');
       this.notify();
@@ -153,10 +169,10 @@ export class Web3Service {
       balanceEth: '0.00',
       balanceUsdc: '0.00',
       isDemo: false,
-      holdings: {},
+      holdings: this.state.holdings || {},
     };
     localStorage.removeItem('dassets_demo_mode');
-    this.notify();
+    this.subscribers.forEach(cb => cb({ ...this.state }));
   }
 
   public recordMint(symbol: string, amount: number, usdcCost: number) {
