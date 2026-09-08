@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { 
   Search, 
   ArrowUpDown,
@@ -9,11 +9,8 @@ import {
   TrendingDown,
   LayoutGrid,
   List,
-  Flame,
-  Shield,
   Zap,
-  Activity,
-  Droplets
+  Activity
 } from 'lucide-react';
 import { LeveragedAsset, AssetCategory } from '../types';
 import { CopyButton } from './CopyButton';
@@ -28,11 +25,11 @@ interface AssetTableProps {
 type LeverageTier = 'all' | '2x' | '3x' | '5x' | 'short';
 type ViewMode = 'table' | 'grid';
 
-// Reusable Deterministic SVG Sparkline Chart
+// Crisp, Professional SVG Sparkline
 const Sparkline: React.FC<{ change24h: number; currentNav: number; width?: number; height?: number }> = ({ 
   change24h, 
   currentNav, 
-  width = 80, 
+  width = 84, 
   height = 24 
 }) => {
   const pointsCount = 10;
@@ -42,7 +39,7 @@ const Sparkline: React.FC<{ change24h: number; currentNav: number; width?: numbe
   
   for (let i = 0; i < pointsCount; i++) {
     const progress = i / (pointsCount - 1);
-    const wave = Math.sin(progress * Math.PI) * (isPositive ? 0.35 : -0.35);
+    const wave = Math.sin(progress * Math.PI) * (isPositive ? 0.3 : -0.3);
     const val = startNav + (currentNav - startNav) * progress + (i > 0 && i < pointsCount - 1 ? wave * 0.04 * currentNav : 0);
     points.push({ x: (i / (pointsCount - 1)) * width, y: val });
   }
@@ -65,7 +62,7 @@ const Sparkline: React.FC<{ change24h: number; currentNav: number; width?: numbe
     <svg width={width} height={height} className="overflow-visible inline-block">
       <defs>
         <linearGradient id={fillGradientId} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={strokeColor} stopOpacity="0.28" />
+          <stop offset="0%" stopColor={strokeColor} stopOpacity="0.22" />
           <stop offset="100%" stopColor={strokeColor} stopOpacity="0.0" />
         </linearGradient>
       </defs>
@@ -86,7 +83,6 @@ export const AssetTable: React.FC<AssetTableProps> = ({
   assets,
   onSelectAsset,
   onMintAsset,
-  onSeedPool,
 }) => {
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<AssetCategory>('all');
@@ -98,28 +94,19 @@ export const AssetTable: React.FC<AssetTableProps> = ({
   const categories: { key: AssetCategory; label: string }[] = [
     { key: 'all', label: 'All Markets' },
     { key: 'majors', label: 'Majors' },
-    { key: 'layer1', label: 'Layer 1 / 2' },
+    { key: 'layer1', label: 'Layer 1 & 2' },
     { key: 'defi', label: 'DeFi' },
     { key: 'ai', label: 'AI & Compute' },
     { key: 'meme', label: 'Memes' },
   ];
 
-  const leverageTiers: { key: LeverageTier; label: string; count?: number }[] = [
-    { key: 'all', label: 'All Tiers' },
-    { key: '2x', label: '▲ 2x Long' },
-    { key: '3x', label: '▲ 3x Long' },
-    { key: '5x', label: '▲ 5x Long' },
-    { key: 'short', label: '▼ Inverse Short' },
+  const leverageTiers: { key: LeverageTier; label: string }[] = [
+    { key: 'all', label: 'All Multipliers' },
+    { key: '2x', label: '2x Long' },
+    { key: '3x', label: '3x Long' },
+    { key: '5x', label: '5x Long' },
+    { key: 'short', label: 'Inverse Short' },
   ];
-
-  // Top Movers and Flagships
-  const flagship = useMemo(() => assets.find(a => a.symbol === 'dBTC3L') || assets[0], [assets]);
-  const topGainer = useMemo(() => {
-    return [...assets].filter(a => !a.isShort).sort((a, b) => b.change24h - a.change24h)[0] || assets[0];
-  }, [assets]);
-  const topHedge = useMemo(() => {
-    return [...assets].filter(a => a.isShort).sort((a, b) => b.change24h - a.change24h)[0] || assets[1];
-  }, [assets]);
 
   const filteredAssets = useMemo(() => {
     return assets
@@ -165,282 +152,157 @@ export const AssetTable: React.FC<AssetTableProps> = ({
 
   return (
     <motion.div 
-      initial={{ opacity: 0, y: 12 }}
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
+      transition={{ duration: 0.3 }}
       className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8 text-slate-100 selection:bg-rh-green selection:text-black"
     >
       
-      {/* Header & Controls */}
-      <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] text-xs font-semibold text-slate-300 mb-3">
-              <span className="w-1.5 h-1.5 rounded-full bg-rh-green animate-pulse"></span>
-              <span>270+ Leveraged Positions • Robinhood Chain (4663)</span>
-            </div>
-            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-white font-display">
-              Token Markets Directory
-            </h1>
-            <p className="text-sm text-slate-400 max-w-2xl mt-1 leading-relaxed font-sans">
-              Permissionless leveraged tokens with continuous rebalancing, zero borrowing debt, and continuous on-chain Oracle NAV pricing.
-            </p>
+      {/* Clean Institutional Header */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-2 border-b border-white/[0.08]">
+        <div>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rh-green/10 border border-rh-green/25 text-xs font-semibold text-rh-green mb-3">
+            <span className="w-2 h-2 rounded-full bg-rh-green animate-pulse"></span>
+            <span>Robinhood Chain Mainnet (4663)</span>
           </div>
-
-          {/* Search & View Mode Switcher */}
-          <div className="flex items-center gap-2.5 self-start sm:self-center w-full sm:w-auto">
-            <div className="relative flex-1 sm:w-64">
-              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search symbol (BTC, SOL, AI)..."
-                className="w-full bg-[#090C10]/80 border border-white/[0.08] focus:border-rh-green/50 rounded-lg pl-9 pr-4 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none transition font-mono"
-              />
-            </div>
-
-            {/* Table / Grid Mode Toggle */}
-            <div className="flex items-center bg-[#090C10]/80 border border-white/[0.08] p-1 rounded-lg">
-              <button
-                onClick={() => setViewMode('table')}
-                className={`p-1.5 rounded transition ${
-                  viewMode === 'table'
-                    ? 'bg-white text-black font-bold shadow-sm'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-                title="Table View"
-              >
-                <List className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => setViewMode('grid')}
-                className={`p-1.5 rounded transition ${
-                  viewMode === 'grid'
-                    ? 'bg-white text-black font-bold shadow-sm'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-                title="Grid Card View"
-              >
-                <LayoutGrid className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
+          <h1 className="text-3xl sm:text-5xl font-bold tracking-tight text-white font-display">
+            Markets Directory
+          </h1>
+          <p className="text-base text-slate-400 mt-2 font-normal max-w-2xl">
+            Trade tokenized 2x, 3x, and 5x Long & Inverse Short positions with continuous on-chain Oracle NAV and zero liquidation risk.
+          </p>
         </div>
 
-        {/* Top Movers Spotlight Strip */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 font-mono">
-          
-          {/* Flagship Card */}
-          <div 
-            onClick={() => onSelectAsset(flagship)}
-            className="glass-panel glass-panel-hover rounded-xl p-4 cursor-pointer space-y-2 border-emerald-500/20"
-          >
-            <div className="flex items-center justify-between">
-              <span className="flex items-center gap-1 text-[10px] uppercase font-sans font-bold text-rh-green tracking-wider">
-                <Flame className="w-3 h-3" />
-                <span>Flagship Benchmark</span>
-              </span>
-              <span className="text-[10px] text-rh-green bg-rh-green/10 border border-rh-green/30 px-1.5 py-0.2 rounded">
-                Live on 4663
-              </span>
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2.5">
-                <div 
-                  className="w-7 h-7 rounded flex items-center justify-center font-bold text-xs"
-                  style={{ backgroundColor: `${flagship.iconColor}20`, color: flagship.iconColor, border: `1px solid ${flagship.iconColor}40` }}
-                >
-                  {flagship.underlying.slice(0, 3)}
-                </div>
-                <div>
-                  <div className="font-bold text-white text-sm">{flagship.symbol}</div>
-                  <div className="text-[10px] text-slate-400 font-sans">{flagship.name}</div>
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="text-base font-bold text-white">${flagship.currentNav.toFixed(2)}</div>
-                <div className="text-[11px] font-bold text-rh-green">+{flagship.change24h}%</div>
-              </div>
-            </div>
+        {/* Big Search Input & View Switcher */}
+        <div className="flex items-center gap-3 w-full md:w-auto">
+          <div className="relative flex-1 md:w-80">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search 270+ assets (BTC, ETH, SOL)..."
+              className="w-full bg-[#0C1017] border border-white/[0.12] focus:border-rh-green/60 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none transition font-sans shadow-inner"
+            />
           </div>
 
-          {/* Top Bull Gainer */}
-          <div 
-            onClick={() => onSelectAsset(topGainer)}
-            className="glass-panel glass-panel-hover rounded-xl p-4 cursor-pointer space-y-2"
-          >
-            <div className="flex items-center justify-between">
-              <span className="flex items-center gap-1 text-[10px] uppercase font-sans font-bold text-sky-400 tracking-wider">
-                <TrendingUp className="w-3 h-3" />
-                <span>Top Bull Gainer</span>
-              </span>
-              <span className="text-[10px] text-slate-400 font-mono">
-                {topGainer.leverage}x Multiplier
-              </span>
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2.5">
-                <div 
-                  className="w-7 h-7 rounded flex items-center justify-center font-bold text-xs"
-                  style={{ backgroundColor: `${topGainer.iconColor}20`, color: topGainer.iconColor, border: `1px solid ${topGainer.iconColor}40` }}
-                >
-                  {topGainer.underlying.slice(0, 3)}
-                </div>
-                <div>
-                  <div className="font-bold text-white text-sm">{topGainer.symbol}</div>
-                  <div className="text-[10px] text-slate-400 font-sans">{topGainer.name}</div>
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="text-base font-bold text-white">${topGainer.currentNav.toFixed(2)}</div>
-                <div className="text-[11px] font-bold text-rh-green">+{topGainer.change24h}%</div>
-              </div>
-            </div>
+          <div className="flex items-center bg-[#0C1017] border border-white/[0.12] p-1 rounded-xl">
+            <button
+              onClick={() => setViewMode('table')}
+              className={`p-2 rounded-lg transition ${
+                viewMode === 'table'
+                  ? 'bg-white text-black font-bold shadow-sm'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+              title="Table View"
+            >
+              <List className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setViewMode('grid')}
+              className={`p-2 rounded-lg transition ${
+                viewMode === 'grid'
+                  ? 'bg-white text-black font-bold shadow-sm'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+              title="Card Grid View"
+            >
+              <LayoutGrid className="w-4 h-4" />
+            </button>
           </div>
-
-          {/* Top Inverse Short Hedge */}
-          <div 
-            onClick={() => onSelectAsset(topHedge)}
-            className="glass-panel glass-panel-hover rounded-xl p-4 cursor-pointer space-y-2"
-          >
-            <div className="flex items-center justify-between">
-              <span className="flex items-center gap-1 text-[10px] uppercase font-sans font-bold text-amber-400 tracking-wider">
-                <Shield className="w-3 h-3" />
-                <span>Inverse Short Hedge</span>
-              </span>
-              <span className="text-[10px] text-red-400 bg-red-500/10 border border-red-500/30 px-1.5 py-0.2 rounded font-mono">
-                {topHedge.leverage}x Inverse
-              </span>
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2.5">
-                <div 
-                  className="w-7 h-7 rounded flex items-center justify-center font-bold text-xs"
-                  style={{ backgroundColor: `${topHedge.iconColor}20`, color: topHedge.iconColor, border: `1px solid ${topHedge.iconColor}40` }}
-                >
-                  {topHedge.underlying.slice(0, 3)}
-                </div>
-                <div>
-                  <div className="font-bold text-white text-sm">{topHedge.symbol}</div>
-                  <div className="text-[10px] text-slate-400 font-sans">{topHedge.name}</div>
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="text-base font-bold text-white">${topHedge.currentNav.toFixed(2)}</div>
-                <div className={`text-[11px] font-bold ${topHedge.change24h >= 0 ? 'text-rh-green' : 'text-red-400'}`}>
-                  {topHedge.change24h >= 0 ? '+' : ''}{topHedge.change24h}%
-                </div>
-              </div>
-            </div>
-          </div>
-
-        </div>
-
-        {/* Dual Filter Controls Bar */}
-        <div className="space-y-3">
-          
-          {/* Category Tabs */}
-          <div className="flex items-center space-x-1 border-b border-white/[0.08] pb-3 overflow-x-auto text-xs">
-            {categories.map((cat) => {
-              const isSelected = selectedCategory === cat.key;
-              return (
-                <button
-                  key={cat.key}
-                  onClick={() => setSelectedCategory(cat.key)}
-                  className={`relative px-3.5 py-1.5 rounded-lg font-medium transition whitespace-nowrap ${
-                    isSelected
-                      ? 'text-white font-semibold'
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]'
-                  }`}
-                >
-                  {isSelected && (
-                    <motion.div
-                      layoutId="activeCategoryTab"
-                      className="absolute inset-0 bg-white/[0.12] rounded-lg -z-10 shadow-sm"
-                      transition={{ type: 'spring', bounce: 0.2, duration: 0.4 }}
-                    />
-                  )}
-                  {cat.label}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Leverage Tier Pills */}
-          <div className="flex flex-wrap items-center gap-2 text-xs font-mono">
-            <span className="text-[11px] text-slate-400 uppercase tracking-wider font-sans font-medium mr-1">
-              Leverage Multiplier:
-            </span>
-            {leverageTiers.map((tier) => {
-              const isSelected = leverageTier === tier.key;
-              return (
-                <button
-                  key={tier.key}
-                  onClick={() => setLeverageTier(tier.key)}
-                  className={`px-3 py-1 rounded-md transition text-[11px] font-semibold flex items-center gap-1.5 ${
-                    isSelected
-                      ? tier.key === 'short'
-                        ? 'bg-red-500/20 text-red-400 border border-red-500/40 shadow-sm'
-                        : 'bg-rh-green/20 text-rh-green border border-rh-green/40 shadow-sm'
-                      : 'bg-[#090C10]/80 text-slate-400 border border-white/[0.08] hover:text-white hover:bg-white/[0.04]'
-                  }`}
-                >
-                  <span>{tier.label}</span>
-                </button>
-              );
-            })}
-            
-            <span className="ml-auto text-[11px] text-slate-400 font-sans hidden sm:block">
-              Showing <strong className="text-white">{filteredAssets.length}</strong> markets
-            </span>
-          </div>
-
         </div>
       </div>
 
-      {/* Main Content Area: Table vs Grid Mode */}
+      {/* Spacious Unified Filter Toolbar */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        
+        {/* Category Segmented Control */}
+        <div className="flex items-center space-x-1.5 overflow-x-auto pb-1 text-xs sm:text-sm font-medium">
+          {categories.map((cat) => {
+            const isSelected = selectedCategory === cat.key;
+            return (
+              <button
+                key={cat.key}
+                onClick={() => setSelectedCategory(cat.key)}
+                className={`px-4 py-2 rounded-xl transition whitespace-nowrap ${
+                  isSelected
+                    ? 'bg-white text-black font-bold shadow-sm'
+                    : 'text-slate-400 hover:text-white hover:bg-white/[0.05]'
+                }`}
+              >
+                {cat.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Leverage Tier Filter */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs font-mono">
+          <span className="text-slate-400 text-xs font-sans mr-1 hidden sm:inline">Multiplier:</span>
+          {leverageTiers.map((tier) => {
+            const isSelected = leverageTier === tier.key;
+            return (
+              <button
+                key={tier.key}
+                onClick={() => setLeverageTier(tier.key)}
+                className={`px-3 py-1.5 rounded-lg font-semibold transition whitespace-nowrap ${
+                  isSelected
+                    ? tier.key === 'short'
+                      ? 'bg-red-500 text-white shadow-sm'
+                      : 'bg-rh-green text-black shadow-sm'
+                    : 'bg-white/[0.04] text-slate-400 hover:text-white hover:bg-white/[0.08] border border-white/[0.06]'
+                }`}
+              >
+                {tier.label}
+              </button>
+            );
+          })}
+        </div>
+
+      </div>
+
+      {/* Main Markets List / Grid */}
       {viewMode === 'table' ? (
         
-        /* High-Craft Table View */
-        <div className="glass-panel rounded-2xl overflow-hidden shadow-2xl">
+        /* Clean Institutional Table */
+        <div className="glass-panel rounded-2xl overflow-hidden shadow-2xl border border-white/[0.08]">
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs">
+            <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-white/[0.08] bg-[#07090D]/80 text-[11px] font-mono text-slate-400 uppercase">
-                  <th className="py-3 px-4 cursor-pointer select-none" onClick={() => handleSort('name')}>
-                    <div className="flex items-center gap-1">
+                <tr className="border-b border-white/[0.08] bg-[#07090E]/90 text-xs font-mono text-slate-400 uppercase tracking-wider">
+                  <th className="py-4 px-6 cursor-pointer select-none" onClick={() => handleSort('name')}>
+                    <div className="flex items-center gap-1.5">
                       <span>Market Asset</span>
-                      <ArrowUpDown className="w-3 h-3 text-slate-500" />
+                      <ArrowUpDown className="w-3.5 h-3.5 text-slate-500" />
                     </div>
                   </th>
-                  <th className="py-3 px-3">Leverage Tier</th>
-                  <th className="py-3 px-4 text-right cursor-pointer select-none" onClick={() => handleSort('nav')}>
-                    <div className="flex items-center justify-end gap-1">
+                  <th className="py-4 px-4">Multiplier</th>
+                  <th className="py-4 px-5 text-right cursor-pointer select-none" onClick={() => handleSort('nav')}>
+                    <div className="flex items-center justify-end gap-1.5">
                       <span>Oracle NAV</span>
-                      <ArrowUpDown className="w-3 h-3 text-slate-500" />
+                      <ArrowUpDown className="w-3.5 h-3.5 text-slate-500" />
                     </div>
                   </th>
-                  <th className="py-3 px-4 text-right cursor-pointer select-none" onClick={() => handleSort('change')}>
-                    <div className="flex items-center justify-end gap-1">
-                      <span>24h Change</span>
-                      <ArrowUpDown className="w-3 h-3 text-slate-500" />
+                  <th className="py-4 px-5 text-right cursor-pointer select-none" onClick={() => handleSort('change')}>
+                    <div className="flex items-center justify-end gap-1.5">
+                      <span>24h Volatility</span>
+                      <ArrowUpDown className="w-3.5 h-3.5 text-slate-500" />
                     </div>
                   </th>
-                  <th className="py-3 px-4 text-center hidden md:table-cell">
+                  <th className="py-4 px-5 text-center hidden md:table-cell">
                     <span>7D Trend</span>
                   </th>
-                  <th className="py-3 px-4 text-right cursor-pointer select-none hidden sm:table-cell" onClick={() => handleSort('spot')}>
-                    <div className="flex items-center justify-end gap-1">
-                      <span>Underlying Spot</span>
-                      <ArrowUpDown className="w-3 h-3 text-slate-500" />
+                  <th className="py-4 px-5 text-right cursor-pointer select-none hidden sm:table-cell" onClick={() => handleSort('spot')}>
+                    <div className="flex items-center justify-end gap-1.5">
+                      <span>Spot Benchmark</span>
+                      <ArrowUpDown className="w-3.5 h-3.5 text-slate-500" />
                     </div>
                   </th>
-                  <th className="py-3 px-4 text-center hidden lg:table-cell">Robinhood Chain Contract</th>
-                  <th className="py-3 px-4 text-right">Execution</th>
+                  <th className="py-4 px-5 text-center hidden lg:table-cell">Robinhood CA</th>
+                  <th className="py-4 px-6 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/[0.04] font-mono">
+              <tbody className="divide-y divide-white/[0.04]">
                 {filteredAssets.slice(0, 100).map((asset) => {
                   const isPositive = asset.change24h >= 0;
                   return (
@@ -449,36 +311,36 @@ export const AssetTable: React.FC<AssetTableProps> = ({
                       className="hover:bg-white/[0.035] transition-colors duration-150 cursor-pointer group"
                       onClick={() => onSelectAsset(asset)}
                     >
-                      {/* Asset Name */}
-                      <td className="py-3.5 px-4 font-sans">
-                        <div className="flex items-center space-x-3">
+                      {/* Asset Name & Icon */}
+                      <td className="py-4 px-6 font-sans">
+                        <div className="flex items-center space-x-3.5">
                           <div
-                            className="w-7 h-7 rounded flex items-center justify-center font-bold text-[10px] flex-shrink-0"
+                            className="w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs flex-shrink-0 shadow-sm"
                             style={{
-                              backgroundColor: `${asset.iconColor}15`,
+                              backgroundColor: `${asset.iconColor}20`,
                               color: asset.iconColor,
-                              border: `1px solid ${asset.iconColor}30`,
+                              border: `1px solid ${asset.iconColor}40`,
                             }}
                           >
                             {asset.underlying.slice(0, 3)}
                           </div>
                           <div>
-                            <div className="font-semibold text-white group-hover:text-rh-green transition-colors">
+                            <div className="font-bold text-base text-white group-hover:text-rh-green transition-colors">
                               {asset.symbol}
                             </div>
-                            <div className="text-[11px] text-slate-400 font-mono">
+                            <div className="text-xs text-slate-400 font-sans">
                               {asset.name}
                             </div>
                           </div>
                         </div>
                       </td>
 
-                      {/* Leverage Badge */}
-                      <td className="py-3.5 px-3">
-                        <span className={`text-[11px] font-mono font-semibold px-2 py-0.5 rounded inline-flex items-center gap-1 ${
+                      {/* Multiplier Badge */}
+                      <td className="py-4 px-4">
+                        <span className={`text-xs font-mono font-bold px-2.5 py-1 rounded-lg inline-flex items-center gap-1 ${
                           asset.isShort 
-                            ? 'bg-red-500/10 text-red-400 border border-red-500/20' 
-                            : 'bg-rh-green/10 text-rh-green border border-rh-green/20'
+                            ? 'bg-red-500/10 text-red-400 border border-red-500/25' 
+                            : 'bg-rh-green/10 text-rh-green border border-rh-green/25'
                         }`}>
                           <span>{asset.isShort ? '▼' : '▲'}</span>
                           <span>{Math.abs(asset.leverage)}x {asset.isShort ? 'Short' : 'Long'}</span>
@@ -486,72 +348,68 @@ export const AssetTable: React.FC<AssetTableProps> = ({
                       </td>
 
                       {/* NAV */}
-                      <td className="py-3.5 px-4 text-right text-white font-bold text-sm">
+                      <td className="py-4 px-5 text-right font-mono font-bold text-base text-white">
                         ${asset.currentNav.toFixed(2)}
                       </td>
 
                       {/* 24h Change */}
-                      <td className="py-3.5 px-4 text-right">
-                        <span className={`text-[11px] font-bold inline-flex items-center justify-end gap-0.5 ${isPositive ? 'text-rh-green' : 'text-red-400'}`}>
+                      <td className="py-4 px-5 text-right font-mono">
+                        <span className={`text-sm font-bold inline-flex items-center justify-end gap-1 ${isPositive ? 'text-rh-green' : 'text-red-400'}`}>
                           {isPositive ? '+' : ''}{asset.change24h}%
                         </span>
                       </td>
 
                       {/* 7D Trend Sparkline */}
-                      <td className="py-3.5 px-4 text-center hidden md:table-cell">
-                        <Sparkline change24h={asset.change24h} currentNav={asset.currentNav} width={75} height={20} />
+                      <td className="py-4 px-5 text-center hidden md:table-cell">
+                        <Sparkline change24h={asset.change24h} currentNav={asset.currentNav} width={84} height={24} />
                       </td>
 
                       {/* Underlying Spot Price */}
-                      <td className="py-3.5 px-4 text-right text-slate-300 hidden sm:table-cell">
+                      <td className="py-4 px-5 text-right text-sm font-mono text-slate-300 hidden sm:table-cell">
                         ${asset.indexPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </td>
 
                       {/* On-Chain Contract Address */}
-                      <td className="py-3.5 px-4 text-center font-sans hidden lg:table-cell" onClick={(e) => e.stopPropagation()}>
+                      <td className="py-4 px-5 text-center font-sans hidden lg:table-cell" onClick={(e) => e.stopPropagation()}>
                         {asset.tokenAddress ? (
                           <div className="flex items-center justify-center gap-2">
-                            <span className="inline-flex items-center gap-1 text-[10px] bg-rh-green/10 text-rh-green border border-rh-green/30 px-1.5 py-0.5 rounded font-mono font-semibold">
-                              <CheckCircle2 className="w-2.5 h-2.5" />
+                            <span className="inline-flex items-center gap-1 text-xs bg-rh-green/10 text-rh-green border border-rh-green/30 px-2 py-0.5 rounded-md font-mono font-semibold">
+                              <CheckCircle2 className="w-3 h-3" />
                               Deployed
                             </span>
                             <a
                               href={`https://robinhoodchain.blockscout.com/address/${asset.tokenAddress}`}
                               target="_blank"
                               rel="noreferrer"
-                              className="text-[11px] font-mono text-slate-300 hover:text-white hover:underline flex items-center gap-1"
+                              className="text-xs font-mono text-slate-300 hover:text-white hover:underline flex items-center gap-1"
                             >
                               <span>{asset.tokenAddress.slice(0, 6)}...{asset.tokenAddress.slice(-4)}</span>
-                              <ExternalLink className="w-3 h-3 text-slate-400" />
+                              <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
                             </a>
                             <CopyButton text={asset.tokenAddress} />
                           </div>
                         ) : (
-                          <span className="text-[11px] text-slate-500 font-mono">
-                            Available on Mint
+                          <span className="text-xs text-slate-500 font-mono">
+                            Ready on Mint
                           </span>
                         )}
                       </td>
 
                       {/* Action Buttons */}
-                      <td className="py-3.5 px-4 text-right" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex items-center justify-end gap-2 font-sans">
-                          <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => onMintAsset(asset)}
-                            className="px-3 py-1 rounded-md bg-white hover:bg-slate-200 text-black text-xs font-semibold transition shadow-sm"
-                          >
-                            Mint
-                          </motion.button>
-                          <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
+                      <td className="py-4 px-6 text-right font-sans" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-end gap-2.5">
+                          <button
                             onClick={() => onSelectAsset(asset)}
-                            className="px-2.5 py-1 rounded-md bg-white/[0.04] hover:bg-white/[0.10] text-slate-300 hover:text-white text-xs transition border border-white/[0.08]"
+                            className="px-3.5 py-1.5 rounded-lg bg-white/[0.06] hover:bg-white/[0.12] text-slate-200 hover:text-white text-xs font-semibold transition border border-white/[0.08]"
                           >
                             Trade
-                          </motion.button>
+                          </button>
+                          <button
+                            onClick={() => onMintAsset(asset)}
+                            className="px-4 py-1.5 rounded-lg bg-white hover:bg-slate-200 text-black text-xs font-bold transition shadow-sm"
+                          >
+                            Mint
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -562,31 +420,29 @@ export const AssetTable: React.FC<AssetTableProps> = ({
           </div>
 
           {filteredAssets.length > 100 && (
-            <div className="py-3 px-4 text-center text-xs text-slate-400 border-t border-white/[0.08] font-mono bg-[#06080C]/80">
-              Displaying top 100 of {filteredAssets.length} markets. Use search to filter any specific pair.
+            <div className="py-4 px-6 text-center text-xs text-slate-400 border-t border-white/[0.08] font-mono bg-[#07090E]/70">
+              Showing top 100 of {filteredAssets.length} markets. Use search to filter any specific pair.
             </div>
           )}
         </div>
 
       ) : (
         
-        /* High-End Grid Card View */
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4.5">
+        /* High-End Grid View */
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {filteredAssets.slice(0, 60).map((asset) => {
             const isPositive = asset.change24h >= 0;
             return (
-              <motion.div
+              <div
                 key={asset.id}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
                 onClick={() => onSelectAsset(asset)}
-                className="glass-panel glass-panel-hover rounded-2xl p-5 space-y-4 cursor-pointer relative overflow-hidden group"
+                className="glass-panel glass-panel-hover rounded-2xl p-6 space-y-4.5 cursor-pointer relative overflow-hidden group"
               >
-                {/* Card Top: Asset Icon, Symbol, Multiplier */}
+                {/* Header: Token Logo, Symbol, Multiplier */}
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
+                  <div className="flex items-center space-x-3.5">
                     <div 
-                      className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-xs"
+                      className="w-11 h-11 rounded-xl flex items-center justify-center font-bold text-xs shadow-sm"
                       style={{
                         backgroundColor: `${asset.iconColor}20`,
                         color: asset.iconColor,
@@ -596,7 +452,7 @@ export const AssetTable: React.FC<AssetTableProps> = ({
                       {asset.underlying.slice(0, 3)}
                     </div>
                     <div>
-                      <div className="font-bold text-white text-base font-display group-hover:text-rh-green transition-colors">
+                      <div className="font-bold text-white text-lg font-display group-hover:text-rh-green transition-colors">
                         {asset.symbol}
                       </div>
                       <div className="text-xs text-slate-400 font-sans">
@@ -605,20 +461,19 @@ export const AssetTable: React.FC<AssetTableProps> = ({
                     </div>
                   </div>
 
-                  {/* Multiplier Tag */}
-                  <span className={`text-[11px] font-mono font-bold px-2.5 py-1 rounded-full ${
+                  <span className={`text-xs font-mono font-bold px-3 py-1 rounded-full ${
                     asset.isShort
-                      ? 'bg-red-500/10 text-red-400 border border-red-500/30'
-                      : 'bg-rh-green/10 text-rh-green border border-rh-green/30'
+                      ? 'bg-red-500/10 text-red-400 border border-red-500/25'
+                      : 'bg-rh-green/10 text-rh-green border border-rh-green/25'
                   }`}>
                     {asset.isShort ? '▼' : '▲'} {Math.abs(asset.leverage)}x {asset.isShort ? 'Short' : 'Long'}
                   </span>
                 </div>
 
-                {/* Price & Change Block */}
+                {/* Price & Volatility */}
                 <div className="flex items-baseline justify-between pt-1">
                   <div>
-                    <span className="text-[10px] text-slate-400 uppercase tracking-wider font-sans font-medium block">
+                    <span className="text-xs text-slate-400 uppercase tracking-wider font-sans font-medium block">
                       Oracle NAV Price
                     </span>
                     <div className="text-2xl font-bold text-white font-mono mt-0.5">
@@ -627,25 +482,25 @@ export const AssetTable: React.FC<AssetTableProps> = ({
                   </div>
 
                   <div className="text-right">
-                    <span className="text-[10px] text-slate-400 uppercase tracking-wider font-sans font-medium block">
+                    <span className="text-xs text-slate-400 uppercase tracking-wider font-sans font-medium block">
                       24h Volatility
                     </span>
-                    <div className={`text-sm font-bold font-mono inline-flex items-center gap-1 mt-0.5 ${
+                    <div className={`text-base font-bold font-mono inline-flex items-center gap-1 mt-0.5 ${
                       isPositive ? 'text-rh-green' : 'text-red-400'
                     }`}>
-                      {isPositive ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
+                      {isPositive ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
                       <span>{isPositive ? '+' : ''}{asset.change24h}%</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Embedded Wide Sparkline */}
-                <div className="bg-black/40 border border-white/[0.04] rounded-xl p-2.5 flex items-center justify-center">
-                  <Sparkline change24h={asset.change24h} currentNav={asset.currentNav} width={270} height={40} />
+                <div className="bg-black/30 border border-white/[0.04] rounded-xl p-3 flex items-center justify-center">
+                  <Sparkline change24h={asset.change24h} currentNav={asset.currentNav} width={280} height={44} />
                 </div>
 
-                {/* Specs Inlay */}
-                <div className="carbon-inlay rounded-xl p-3 text-xs font-mono space-y-1.5 text-slate-400">
+                {/* Specs Box */}
+                <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-3.5 text-xs font-mono space-y-1.5 text-slate-400">
                   <div className="flex justify-between">
                     <span>Spot Benchmark:</span>
                     <strong className="text-slate-200">${asset.indexPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
@@ -653,29 +508,29 @@ export const AssetTable: React.FC<AssetTableProps> = ({
                   <div className="flex justify-between">
                     <span>Robinhood Chain:</span>
                     <strong className={asset.tokenAddress ? 'text-rh-green' : 'text-slate-400'}>
-                      {asset.tokenAddress ? 'Live Contract (4663)' : 'Available on Mint'}
+                      {asset.tokenAddress ? '0x5164...56F6' : 'Ready on Mint'}
                     </strong>
                   </div>
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex items-center gap-2 pt-1 font-sans" onClick={(e) => e.stopPropagation()}>
+                <div className="flex items-center gap-2.5 pt-1 font-sans" onClick={(e) => e.stopPropagation()}>
                   <button
                     onClick={() => onSelectAsset(asset)}
-                    className="flex-1 bg-white/[0.06] hover:bg-white/[0.12] text-white py-2 px-3 rounded-lg text-xs font-semibold transition flex items-center justify-center gap-1.5 border border-white/[0.08]"
+                    className="flex-1 bg-white/[0.06] hover:bg-white/[0.12] text-white py-2.5 px-3 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5 border border-white/[0.08]"
                   >
-                    <Activity className="w-3.5 h-3.5 text-rh-green" />
+                    <Activity className="w-4 h-4 text-rh-green" />
                     <span>View Feed</span>
                   </button>
                   <button
                     onClick={() => onMintAsset(asset)}
-                    className="flex-1 bg-white hover:bg-slate-200 text-black py-2 px-3 rounded-lg text-xs font-semibold transition flex items-center justify-center gap-1.5 shadow-sm"
+                    className="flex-1 bg-white hover:bg-slate-200 text-black py-2.5 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm"
                   >
-                    <Zap className="w-3.5 h-3.5 fill-current" />
+                    <Zap className="w-4 h-4 fill-current" />
                     <span>Mint</span>
                   </button>
                 </div>
-              </motion.div>
+              </div>
             );
           })}
         </div>
