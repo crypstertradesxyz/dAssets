@@ -41,7 +41,7 @@ export const CreatePoolModal: React.FC<CreatePoolModalProps> = ({
   );
   const [pairedSymbol, setPairedSymbol] = useState<'USDC' | 'ETH'>('USDC');
   const [feeTier, setFeeTier] = useState<'0.05%' | '0.30%' | '1.00%'>('0.30%');
-  const [assetAmount, setAssetAmount] = useState('25');
+  const [assetAmount, setAssetAmount] = useState('5');
   const [searchQuery, setSearchQuery] = useState('');
   const [isAssetPickerOpen, setIsAssetPickerOpen] = useState(false);
   const [isDeploying, setIsDeploying] = useState(false);
@@ -72,9 +72,52 @@ export const CreatePoolModal: React.FC<CreatePoolModalProps> = ({
 
     try {
       const eth = (window as any).ethereum;
+
+      // 1. Ensure wallet is on Robinhood Chain Mainnet (Chain ID 4663 / 0x1237)
+      try {
+        const chainIdHex = await eth.request({ method: 'eth_chainId' });
+        if (parseInt(chainIdHex, 16) !== 4663) {
+          try {
+            await eth.request({
+              method: 'wallet_switchEthereumChain',
+              params: [{ chainId: '0x1237' }],
+            });
+          } catch (switchError: any) {
+            if (switchError.code === 4902) {
+              await eth.request({
+                method: 'wallet_addEthereumChain',
+                params: [{
+                  chainId: '0x1237',
+                  chainName: 'Robinhood Chain',
+                  nativeCurrency: {
+                    name: 'Ethereum',
+                    symbol: 'ETH',
+                    decimals: 18,
+                  },
+                  rpcUrls: ['https://rpc.mainnet.chain.robinhood.com'],
+                  blockExplorerUrls: ['https://robinhoodchain.blockscout.com'],
+                }],
+              });
+            } else {
+              throw switchError;
+            }
+          }
+        }
+      } catch (networkErr: any) {
+        console.warn('Network switch to Robinhood Chain failed:', networkErr);
+        throw new Error('NETWORK_SWITCH_FAILED');
+      }
+
       const provider = new ethers.BrowserProvider(eth);
       const signer = await provider.getSigner();
       const creator = await signer.getAddress();
+
+      // Check gas balance
+      const balance = await provider.getBalance(creator);
+      if (balance === 0n) {
+        throw new Error('NO_L2_GAS');
+      }
+
       const factoryAddress = deployedConfig?.factory || '0x31390C104d777c03B00E95967E3F2905993f947b';
       const factory = new ethers.Contract(factoryAddress, artifacts.dAssetFactory.abi, signer);
 
@@ -126,7 +169,11 @@ export const CreatePoolModal: React.FC<CreatePoolModalProps> = ({
       });
     } catch (err: any) {
       console.error('Failed to register pool on Robinhood Chain:', err);
-      if (err.code === 4001 || err.message?.includes('rejected')) {
+      if (err.message === 'NO_L2_GAS') {
+        alert('Your wallet has 0.00 ETH on Robinhood Chain. A small amount of gas is required to register the pool on-chain.');
+      } else if (err.message === 'NETWORK_SWITCH_FAILED') {
+        alert('Please switch your wallet to Robinhood Chain Mainnet (Chain ID 4663).');
+      } else if (err.code === 4001 || err.message?.includes('rejected')) {
         alert('Transaction was cancelled in your wallet.');
       } else if (err.message?.includes('insufficient funds')) {
         alert('Your wallet does not have enough ETH on Robinhood Chain to pay for transaction gas.');
@@ -383,7 +430,7 @@ export const CreatePoolModal: React.FC<CreatePoolModalProps> = ({
                         value={assetAmount}
                         onChange={(e) => setAssetAmount(e.target.value)}
                         className="w-full bg-transparent text-sm font-bold text-white focus:outline-none mt-1"
-                        placeholder="25"
+                        placeholder="5"
                       />
                     </div>
                     <div className="bg-[#090C10] border border-white/[0.10] rounded-md p-2.5">
@@ -392,6 +439,30 @@ export const CreatePoolModal: React.FC<CreatePoolModalProps> = ({
                         ${usdcRequired.toLocaleString()}
                       </div>
                     </div>
+                  </div>
+
+                  {/* Quick TVL Presets */}
+                  <div className="flex items-center gap-1.5 pt-0.5">
+                    <span className="text-[10px] text-slate-500 font-sans">Presets:</span>
+                    {[
+                      { amt: '5', label: '$10 TVL' },
+                      { amt: '10', label: '$20 TVL' },
+                      { amt: '25', label: '$50 TVL' },
+                      { amt: '50', label: '$100 TVL' },
+                    ].map(({ amt, label }) => (
+                      <button
+                        key={amt}
+                        type="button"
+                        onClick={() => setAssetAmount(amt)}
+                        className={`text-[10px] font-mono px-2 py-0.5 rounded transition ${
+                          assetAmount === amt
+                            ? 'bg-rh-green text-black font-bold'
+                            : 'bg-white/[0.06] text-slate-300 hover:bg-white/[0.12]'
+                        }`}
+                      >
+                        {amt} ({label})
+                      </button>
+                    ))}
                   </div>
                 </div>
 
