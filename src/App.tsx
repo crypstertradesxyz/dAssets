@@ -12,6 +12,7 @@ import { Footer } from './components/Footer';
 
 import { LeveragedAsset, WalletState, AppView } from './types';
 import { PoolsView } from './components/PoolsView';
+import { PortfolioView } from './components/PortfolioView';
 import { INITIAL_ASSETS } from './data/bounceAssets';
 import { OracleService } from './services/oracle';
 import { Web3Service } from './services/web3';
@@ -169,6 +170,19 @@ export const App: React.FC = () => {
           </main>
         )}
 
+        {activeView === 'portfolio' && (
+          <main>
+            <PortfolioView
+              assets={assets}
+              wallet={wallet}
+              onOpenWalletModal={() => setIsWalletModalOpen(true)}
+              onMintAsset={(asset) => setMintAsset(asset)}
+              onSeedPool={(asset) => setSeedPoolAsset(asset)}
+              onNavigate={navigateTo}
+            />
+          </main>
+        )}
+
         {activeView === 'terminal' && (
           <main>
             <OracleTerminal
@@ -223,6 +237,8 @@ export const App: React.FC = () => {
         <WalletModal
           wallet={wallet}
           onClose={() => setIsWalletModalOpen(false)}
+          onNavigate={navigateTo}
+          assets={assets}
         />
       )}
     </div>

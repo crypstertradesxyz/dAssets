@@ -9,23 +9,51 @@ import {
   AlertCircle, 
   ExternalLink,
   RefreshCw,
-  ArrowRight
+  ArrowRight,
+  PieChart
 } from 'lucide-react';
-import { WalletState } from '../types';
+import { WalletState, AppView, LeveragedAsset, LiquidityPool } from '../types';
 import { Web3Service, ROBINHOOD_CHAIN } from '../services/web3';
+import { BridgeService } from '../services/bridge';
 import { CopyButton } from './CopyButton';
 
 interface WalletModalProps {
   wallet: WalletState;
   onClose: () => void;
+  onNavigate?: (view: AppView) => void;
+  assets?: LeveragedAsset[];
 }
 
-export const WalletModal: React.FC<WalletModalProps> = ({ wallet, onClose }) => {
+export const WalletModal: React.FC<WalletModalProps> = ({ wallet, onClose, onNavigate, assets }) => {
   const web3 = Web3Service.getInstance();
   const [isConnecting, setIsConnecting] = useState(false);
   const [connectingType, setConnectingType] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isSwitchingChain, setIsSwitchingChain] = useState(false);
+
+  const userLpPools = React.useMemo(() => {
+    if (!wallet.isConnected || !wallet.address) return [];
+    const allPools: LiquidityPool[] = BridgeService.getInstance().getPools();
+    const userAddr = wallet.address.toLowerCase();
+    return allPools.filter((p: LiquidityPool) => Boolean(p.creator && p.creator.toLowerCase() === userAddr));
+  }, [wallet.address, wallet.isConnected]);
+
+  const activeHoldings = React.useMemo(() => {
+    return Object.entries(wallet.holdings || {})
+      .filter(([_, qty]) => qty > 0)
+      .map(([symbol, qty]) => {
+        const asset = assets?.find(a => a.symbol === symbol);
+        const nav = asset?.currentNav || 1.0;
+        const usd = qty * nav;
+        return { symbol, qty, nav, usd };
+      });
+  }, [wallet.holdings, assets]);
+
+  const totalPositionsUsd = React.useMemo(() => {
+    const tokensUsd = activeHoldings.reduce((sum: number, h) => sum + h.usd, 0);
+    const poolsUsd = userLpPools.reduce((sum: number, p: LiquidityPool) => sum + (p.tvlUsd || p.usdcAmount * 2), 0);
+    return tokensUsd + poolsUsd;
+  }, [activeHoldings, userLpPools]);
 
   const handleConnectInjected = async (type: 'robinhood' | 'metamask' | 'rabby' | 'injected') => {
     setIsConnecting(true);
@@ -170,32 +198,61 @@ export const WalletModal: React.FC<WalletModalProps> = ({ wallet, onClose }) => 
                   <span>Robinhood ETH:</span>
                   <span className="text-white font-bold">{wallet.balanceEth} ETH</span>
                 </div>
+                {totalPositionsUsd > 0 && (
+                  <div className="flex justify-between text-slate-400 pt-2 border-t border-white/[0.04]">
+                    <span>Total Capital Placed:</span>
+                    <span className="text-rh-green font-bold font-mono">${totalPositionsUsd.toFixed(2)} USD</span>
+                  </div>
+                )}
               </div>
 
               {/* Active Portfolio Positions */}
-              {Object.entries(wallet.holdings || {}).filter(([_, qty]) => qty > 0).length > 0 ? (
+              {activeHoldings.length > 0 || userLpPools.length > 0 ? (
                 <div className="bg-[#090C10] border border-white/[0.06] rounded-xl p-3.5 space-y-2.5">
                   <div className="flex items-center justify-between">
                     <span className="text-[11px] font-sans font-semibold text-slate-400 uppercase tracking-wider">
-                      Active Positions
+                      Active Positions & Pools
                     </span>
                     <span className="text-[10px] text-rh-green font-mono">Verified On-Chain</span>
                   </div>
                   <div className="space-y-2 pt-1 border-t border-white/[0.04]">
-                    {Object.entries(wallet.holdings || {})
-                      .filter(([_, qty]) => qty > 0)
-                      .map(([symbol, qty]) => (
-                        <div key={symbol} className="flex justify-between items-center text-xs">
-                          <span className="font-bold text-white font-mono">{symbol}</span>
-                          <span className="text-slate-200 font-mono font-medium">{qty.toFixed(4)} tokens</span>
+                    {activeHoldings.map((h) => (
+                      <div key={h.symbol} className="flex justify-between items-center text-xs">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-bold text-white font-mono">{h.symbol}</span>
+                          <span className="text-slate-400 text-[10px]">({h.qty.toFixed(2)})</span>
                         </div>
-                      ))}
+                        <span className="text-rh-green font-mono font-bold">${h.usd.toFixed(2)}</span>
+                      </div>
+                    ))}
+                    {userLpPools.map((p: LiquidityPool) => (
+                      <div key={p.poolAddress} className="flex justify-between items-center text-xs">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-bold text-pink-400 font-mono">{p.assetSymbol}/USDC LP</span>
+                        </div>
+                        <span className="text-pink-400 font-mono font-bold">${(p.tvlUsd || p.usdcAmount * 2).toFixed(2)}</span>
+                      </div>
+                    ))}
                   </div>
                 </div>
               ) : (
                 <div className="bg-[#090C10] border border-white/[0.06] rounded-xl p-3 text-center text-slate-500 text-[11px] font-sans">
                   No active leveraged tokens held on Robinhood Chain.
                 </div>
+              )}
+
+              {/* View Full Portfolio & Allocation Link */}
+              {onNavigate && (
+                <button
+                  onClick={() => {
+                    onNavigate('portfolio');
+                    onClose();
+                  }}
+                  className="w-full flex items-center justify-center gap-2 bg-white hover:bg-slate-200 text-black py-2.5 px-4 rounded-xl font-bold transition text-xs shadow-sm"
+                >
+                  <PieChart className="w-3.5 h-3.5 text-rh-green" />
+                  <span>View Full Capital Allocation</span>
+                </button>
               )}
 
               <button

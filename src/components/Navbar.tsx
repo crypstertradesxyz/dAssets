@@ -3,7 +3,8 @@ import {
   Wallet, 
   ChevronDown,
   Menu,
-  X
+  X,
+  PieChart
 } from 'lucide-react';
 import { WalletState, AppView } from '../types';
 import { Web3Service } from '../services/web3';
@@ -42,6 +43,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     { view: 'home', label: 'Overview', href: '/' },
     { view: 'markets', label: 'Markets (270+)', href: '/markets' },
     { view: 'pools', label: 'Pools', href: '/pools', badge: 'Uniswap' },
+    { view: 'portfolio', label: 'Portfolio', href: '/portfolio' },
     { view: 'terminal', label: 'Oracle Feed', href: '/terminal', pulse: true },
     { view: 'bridge', label: 'Hyperlane', href: '/bridge' },
     { view: 'contracts', label: 'Contracts', href: '/contracts' },
@@ -120,6 +122,18 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span className="w-1.5 h-1.5 rounded-full bg-rh-green"></span>
               <span>Robinhood (4663)</span>
             </div>
+          )}
+
+          {/* Portfolio Shortcut Button */}
+          {wallet.isConnected && (
+            <button
+              onClick={(e) => handleNav('portfolio', e)}
+              className="hidden lg:flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-rh-green/10 hover:bg-rh-green/20 border border-rh-green/25 text-xs text-rh-green font-mono transition cursor-pointer active:scale-95 shadow-sm"
+              title="View Capital Allocation & Holdings"
+            >
+              <PieChart className="w-3 h-3" />
+              <span className="font-bold">Portfolio</span>
+            </button>
           )}
 
           {/* Wallet Button */}

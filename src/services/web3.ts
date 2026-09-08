@@ -295,7 +295,7 @@ export class Web3Service {
   /**
    * Synchronize account address, balances, and holdings
    */
-  private async syncAccountState(provider: any, accountAddress: string) {
+  public async syncAccountState(provider: any, accountAddress: string) {
     try {
       let currentChainId = ROBINHOOD_CHAIN.chainId;
       try {

@@ -11,6 +11,8 @@ export function getUrlForView(view: AppView, assetSymbol?: string): string {
       return '/markets';
     case 'pools':
       return '/pools';
+    case 'portfolio':
+      return '/portfolio';
     case 'terminal':
       return assetSymbol ? `/terminal/${assetSymbol}` : '/terminal';
     case 'bridge':
@@ -45,7 +47,12 @@ export function parseCurrentUrl(
     return { view: 'pools' };
   }
 
-  // 3. Bridge
+  // 3. Portfolio
+  if (cleanPath === '/portfolio' || cleanPath === '/holdings' || cleanPath === '/wallet' || cleanPath === '/positions') {
+    return { view: 'portfolio' };
+  }
+
+  // 4. Bridge
   if (cleanPath === '/bridge' || cleanPath === '/hyperlane' || cleanPath === '/warp') {
     return { view: 'bridge' };
   }
@@ -97,6 +104,10 @@ export function updatePageMetadata(view: AppView, asset?: LeveragedAsset) {
     case 'pools':
       title = 'Uniswap v3 Liquidity Pools | dAssets';
       desc = 'Seed liquidity, create AMM pools, and trade tokenized leveraged positions natively on Robinhood Chain.';
+      break;
+    case 'portfolio':
+      title = 'Portfolio & Capital Allocation | dAssets';
+      desc = 'Track your net worth, leveraged token holdings, Uniswap LP capital, and on-chain balances on Robinhood Chain.';
       break;
     case 'terminal':
       if (asset) {

@@ -64,6 +64,10 @@ export class BridgeService {
     };
   }
 
+  public getPools(): LiquidityPool[] {
+    return [...this.pools];
+  }
+
   private notifyTx() {
     this.txSubscribers.forEach(cb => cb([...this.transactions]));
   }
