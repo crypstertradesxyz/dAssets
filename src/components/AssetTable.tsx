@@ -74,28 +74,79 @@ export const AssetTable: React.FC<AssetTableProps> = ({
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
-      className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-6"
+      className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8 text-slate-100 selection:bg-rh-green selection:text-black"
     >
       
       {/* Header & Controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">Markets</h1>
-          <p className="text-xs text-slate-400 mt-1">
-            270+ Bounce.tech leveraged positions available for direct minting on Robinhood Chain.
-          </p>
+      <div className="space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] text-xs font-semibold text-slate-300 mb-3">
+              <span className="w-1.5 h-1.5 rounded-full bg-rh-green"></span>
+              <span>270+ Leveraged Positions • Robinhood Chain (4663)</span>
+            </div>
+            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-white font-display">
+              Markets Directory
+            </h1>
+            <p className="text-sm text-slate-400 max-w-2xl mt-1 leading-relaxed font-sans">
+              Permissionless leveraged tokens with continuous rebalancing, zero margin calls, and live Oracle NAV pricing.
+            </p>
+          </div>
+
+          {/* Clean Search Input */}
+          <div className="relative w-full sm:w-72 self-start sm:self-center">
+            <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search symbol (e.g. BTC, ETH, SOL)..."
+              className="w-full bg-[#090C10] border border-white/[0.08] focus:border-white/[0.25] rounded-md pl-9 pr-4 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none transition font-mono"
+            />
+          </div>
         </div>
 
-        {/* Clean Search Input */}
-        <div className="relative w-full sm:w-72">
-          <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search symbol (e.g. BTC, ETH, SOL)..."
-            className="w-full bg-[#0C0F14] border border-white/[0.08] rounded-md pl-9 pr-4 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-white/[0.25] transition"
-          />
+        {/* Quick Metrics Bar */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 pt-2 font-mono">
+          <div className="bg-[#090C10] border border-white/[0.08] rounded-lg p-4 space-y-1">
+            <span className="text-[11px] text-slate-500 font-sans font-medium uppercase tracking-wider block">
+              Active Catalog
+            </span>
+            <div className="text-xl sm:text-2xl font-bold text-white">
+              {assets.length} Pairs
+            </div>
+            <span className="text-[10px] text-slate-400 font-sans">3x & 5x Long/Short</span>
+          </div>
+
+          <div className="bg-[#090C10] border border-white/[0.08] rounded-lg p-4 space-y-1">
+            <span className="text-[11px] text-slate-500 font-sans font-medium uppercase tracking-wider block">
+              Liquidation Risk
+            </span>
+            <div className="text-xl sm:text-2xl font-bold text-rh-green">
+              0% Calls
+            </div>
+            <span className="text-[10px] text-slate-400 font-sans">No margin debt</span>
+          </div>
+
+          <div className="bg-[#090C10] border border-white/[0.08] rounded-lg p-4 space-y-1">
+            <span className="text-[11px] text-slate-500 font-sans font-medium uppercase tracking-wider block">
+              Automated Rebalance
+            </span>
+            <div className="text-xl sm:text-2xl font-bold text-white">
+              Every 8h
+            </div>
+            <span className="text-[10px] text-slate-400 font-sans">Vault volatility peg</span>
+          </div>
+
+          <div className="bg-[#090C10] border border-white/[0.08] rounded-lg p-4 space-y-1">
+            <span className="text-[11px] text-slate-500 font-sans font-medium uppercase tracking-wider block">
+              Gas Settlement
+            </span>
+            <div className="text-xl sm:text-2xl font-bold text-rh-green">
+              ~$0.05
+            </div>
+            <span className="text-[10px] text-slate-400 font-sans">Robinhood Chain L2</span>
+          </div>
         </div>
       </div>
 
@@ -109,7 +160,7 @@ export const AssetTable: React.FC<AssetTableProps> = ({
               onClick={() => setSelectedCategory(cat.key)}
               className={`relative px-3 py-1.5 rounded-md font-medium transition whitespace-nowrap ${
                 isSelected
-                  ? 'text-white'
+                  ? 'text-white font-semibold'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
@@ -127,11 +178,11 @@ export const AssetTable: React.FC<AssetTableProps> = ({
       </div>
 
       {/* High-Craft Table */}
-      <div className="border border-white/[0.08] rounded-lg overflow-hidden bg-[#0A0D12]">
+      <div className="border border-white/[0.08] rounded-xl overflow-hidden bg-[#090C10] shadow-xl">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
-              <tr className="border-b border-white/[0.06] bg-[#0C0F15] text-[11px] font-mono text-slate-400">
+              <tr className="border-b border-white/[0.06] bg-[#07090D] text-[11px] font-mono text-slate-500 uppercase">
                 <th className="py-3 px-4 cursor-pointer select-none" onClick={() => handleSort('name')}>
                   <div className="flex items-center gap-1">
                     <span>Asset</span>

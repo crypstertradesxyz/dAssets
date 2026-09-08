@@ -6,7 +6,7 @@ import { OracleTerminal } from './components/OracleTerminal';
 import { BridgeExplorer } from './components/BridgeExplorer';
 import { ContractsView } from './components/ContractsView';
 import { MintModal } from './components/MintModal';
-import { SeedPoolModal } from './components/SeedPoolModal';
+import { CreatePoolModal } from './components/CreatePoolModal';
 import { WalletModal } from './components/WalletModal';
 import { Footer } from './components/Footer';
 
@@ -152,8 +152,9 @@ export const App: React.FC = () => {
       )}
 
       {seedPoolAsset && (
-        <SeedPoolModal
-          asset={seedPoolAsset}
+        <CreatePoolModal
+          assets={assets}
+          initialAsset={seedPoolAsset}
           wallet={wallet}
           onClose={() => setSeedPoolAsset(null)}
           onOpenWalletModal={() => setIsWalletModalOpen(true)}
