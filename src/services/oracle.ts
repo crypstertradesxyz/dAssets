@@ -1,3 +1,5 @@
+import { ethers } from 'ethers';
+import deployedConfig from '../contracts/deployedAddresses.json';
 import { LeveragedAsset } from '../types';
 
 interface LiveMarketTicker {
@@ -12,8 +14,24 @@ export class OracleService {
   private currentAssets: LeveragedAsset[] = [];
   private pollIntervalId: any = null;
   private lastFetchTime: number = 0;
+  private rpcProvider: ethers.JsonRpcProvider | null = null;
+  private oracleContract: ethers.Contract | null = null;
 
-  private constructor() {}
+  private constructor() {
+    try {
+      this.rpcProvider = new ethers.JsonRpcProvider('https://rpc.mainnet.chain.robinhood.com');
+      const oracleAddress = deployedConfig?.oracle || '0x0c19e8DE99BA135aBdc059b34e0d3F9E5e021fd0';
+      this.oracleContract = new ethers.Contract(
+        oracleAddress,
+        [
+          'function prices(string) view returns (uint256 navPrice, uint256 indexPrice, int256 fundingRate24h, uint256 lastRebalance, uint256 updatedAt)'
+        ],
+        this.rpcProvider
+      );
+    } catch (e) {
+      console.warn('RPC provider init:', e);
+    }
+  }
 
   public static getInstance(): OracleService {
     if (!OracleService.instance) {
@@ -92,6 +110,30 @@ export class OracleService {
           change24h: leveragedChangePercent,
         };
       });
+
+      // On-Chain Robinhood Oracle Sync (Verified Keeper Feed)
+      if (this.oracleContract) {
+        try {
+          for (const sym of ['dBTC3L', 'dBTC3S', 'dETH3L', 'dSOL3L']) {
+            const data = await this.oracleContract.prices(sym);
+            if (data && data.navPrice > 0n) {
+              const onChainNav = parseFloat(ethers.formatUnits(data.navPrice, 18));
+              const onChainSpot = parseFloat(ethers.formatUnits(data.indexPrice, 18));
+              const targetIdx = this.currentAssets.findIndex(a => a.symbol === sym);
+              if (targetIdx !== -1 && onChainNav > 0) {
+                this.currentAssets[targetIdx] = {
+                  ...this.currentAssets[targetIdx],
+                  currentNav: Number(onChainNav.toFixed(4)),
+                  indexPrice: onChainSpot > 0 ? onChainSpot : this.currentAssets[targetIdx].indexPrice,
+                };
+                hasChanges = true;
+              }
+            }
+          }
+        } catch (onChainSyncErr) {
+          // Graceful fallback to HTTP market ticker
+        }
+      }
 
       this.lastFetchTime = Date.now();
       if (hasChanges) {
