@@ -109,8 +109,8 @@ export const PoolsView: React.FC<PoolsViewProps> = ({
 
         {/* Aggregate Stats Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 pt-2 font-mono">
-          <div className="bg-[#090C10] border border-white/[0.08] rounded-lg p-4 space-y-1">
-            <span className="text-[11px] text-slate-500 font-sans font-medium uppercase tracking-wider block">
+          <div className="glass-panel glass-panel-hover rounded-xl p-4 space-y-1">
+            <span className="text-[11px] text-slate-400 font-sans font-medium uppercase tracking-wider block">
               Total AMM TVL
             </span>
             <div className="text-xl sm:text-2xl font-bold text-white">
@@ -119,8 +119,8 @@ export const PoolsView: React.FC<PoolsViewProps> = ({
             <span className="text-[10px] text-slate-400 font-sans">Across {pools.length} active pools</span>
           </div>
 
-          <div className="bg-[#090C10] border border-white/[0.08] rounded-lg p-4 space-y-1">
-            <span className="text-[11px] text-slate-500 font-sans font-medium uppercase tracking-wider block">
+          <div className="glass-panel glass-panel-hover rounded-xl p-4 space-y-1">
+            <span className="text-[11px] text-slate-400 font-sans font-medium uppercase tracking-wider block">
               24h Pool Volume
             </span>
             <div className="text-xl sm:text-2xl font-bold text-white">
@@ -131,8 +131,8 @@ export const PoolsView: React.FC<PoolsViewProps> = ({
             </span>
           </div>
 
-          <div className="bg-[#090C10] border border-white/[0.08] rounded-lg p-4 space-y-1">
-            <span className="text-[11px] text-slate-500 font-sans font-medium uppercase tracking-wider block">
+          <div className="glass-panel glass-panel-hover rounded-xl p-4 space-y-1">
+            <span className="text-[11px] text-slate-400 font-sans font-medium uppercase tracking-wider block">
               Top Yield APR
             </span>
             <div className="text-xl sm:text-2xl font-bold text-rh-green">
@@ -141,12 +141,12 @@ export const PoolsView: React.FC<PoolsViewProps> = ({
             <span className="text-[10px] text-slate-400 font-sans">Concentrated fee tiers</span>
           </div>
 
-          <div className="bg-[#090C10] border border-white/[0.08] rounded-lg p-4 space-y-1">
-            <span className="text-[11px] text-slate-500 font-sans font-medium uppercase tracking-wider block">
+          <div className="glass-panel glass-panel-hover rounded-xl p-4 space-y-1">
+            <span className="text-[11px] text-slate-400 font-sans font-medium uppercase tracking-wider block">
               AMM Settlement
             </span>
             <div className="text-sm font-bold text-white flex items-center gap-1.5 mt-1">
-              <span className="w-2 h-2 rounded-full bg-rh-green"></span>
+              <span className="w-2 h-2 rounded-full bg-rh-green animate-pulse"></span>
               <span>Uniswap v3 Core</span>
             </div>
             <span className="text-[10px] text-slate-400 font-sans">Robinhood Chain Verified</span>
@@ -198,7 +198,7 @@ export const PoolsView: React.FC<PoolsViewProps> = ({
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: idx * 0.05 }}
-                    className="bg-[#090C10] border border-white/[0.08] hover:border-white/[0.18] rounded-xl p-5 space-y-4 transition group relative overflow-hidden"
+                    className="glass-panel glass-panel-hover rounded-2xl p-5 space-y-4 group relative overflow-hidden"
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-2.5">

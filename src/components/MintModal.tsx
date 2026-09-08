@@ -185,17 +185,17 @@ export const MintModal: React.FC<MintModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
       <motion.div 
         initial={{ opacity: 0, scale: 0.96, y: 8 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.96, y: 8 }}
         transition={{ type: 'spring', damping: 26, stiffness: 350 }}
-        className="bg-[#0D1016] border border-white/[0.12] rounded-xl w-full max-w-md overflow-hidden shadow-2xl relative text-slate-100 font-sans"
+        className="glass-panel rounded-2xl w-full max-w-md overflow-hidden shadow-2xl relative text-slate-100 font-sans glow-border-green"
       >
         
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06] bg-[#090C10]">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.08] bg-[#090C10]/80 backdrop-blur-md">
           <div className="flex items-center space-x-3">
             <div
               className="w-8 h-8 rounded-md flex items-center justify-center font-bold text-xs"

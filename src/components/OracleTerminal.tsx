@@ -78,7 +78,7 @@ export const OracleTerminal: React.FC<OracleTerminalProps> = ({
     >
       
       {/* Top Banner: Asset Summary */}
-      <div className="bg-[#090C10] border border-white/[0.08] rounded-xl p-6 shadow-xl space-y-4">
+      <div className="glass-panel rounded-2xl p-6 shadow-2xl space-y-4 glow-border-green">
         <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] text-xs font-semibold text-slate-300">
           <span className="w-1.5 h-1.5 rounded-full bg-rh-green animate-pulse"></span>
           <span>Live Oracle NAV Feeds • Robinhood Chain (4663)</span>
@@ -175,7 +175,7 @@ export const OracleTerminal: React.FC<OracleTerminalProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* Chart Column */}
-        <div className="lg:col-span-2 bg-[#090C10] border border-white/[0.08] rounded-xl p-6 space-y-4 shadow-xl">
+        <div className="lg:col-span-2 glass-panel rounded-2xl p-6 space-y-4 shadow-2xl">
           
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-xs font-semibold text-slate-300">
@@ -183,15 +183,15 @@ export const OracleTerminal: React.FC<OracleTerminalProps> = ({
               <span>Live NAV Price Feed</span>
             </div>
 
-            <div className="flex items-center space-x-1 bg-[#0E1218] p-1 rounded-md border border-white/[0.06] text-xs font-mono">
+            <div className="flex items-center space-x-1 bg-[#0E1218]/90 p-1 rounded-lg border border-white/[0.08] text-xs font-mono">
               {(['1H', '24H', '7D'] as const).map((tf) => (
                 <button
                   key={tf}
                   onClick={() => setTimeframe(tf)}
                   className={`px-2.5 py-1 rounded text-xs transition ${
                     timeframe === tf
-                      ? 'bg-white text-black font-bold'
-                      : 'text-slate-400 hover:text-white'
+                      ? 'bg-white text-black font-bold shadow-sm'
+                      : 'text-slate-400 hover:text-white hover:bg-white/[0.04]'
                   }`}
                 >
                   {tf}
@@ -201,7 +201,7 @@ export const OracleTerminal: React.FC<OracleTerminalProps> = ({
           </div>
 
           {/* SVG Chart */}
-          <div className="relative w-full h-64 bg-black/40 rounded-lg border border-white/[0.04] p-2 overflow-hidden">
+          <div className="relative w-full h-64 bg-black/40 rounded-xl border border-white/[0.06] p-2 overflow-hidden">
             <svg
               viewBox="0 0 600 240"
               preserveAspectRatio="none"
@@ -239,15 +239,15 @@ export const OracleTerminal: React.FC<OracleTerminalProps> = ({
 
           {/* Market Stats Bar */}
           <div className="grid grid-cols-3 gap-3 text-xs font-mono text-center pt-2">
-            <div className="bg-black/30 p-2.5 rounded-lg border border-white/[0.04]">
+            <div className="bg-black/40 p-2.5 rounded-xl border border-white/[0.06]">
               <span className="text-slate-500 block text-[10px]">Underlying Benchmark</span>
               <span className="text-slate-200 font-bold">{asset.underlying} (${asset.indexPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })})</span>
             </div>
-            <div className="bg-black/30 p-2.5 rounded-lg border border-white/[0.04]">
+            <div className="bg-black/40 p-2.5 rounded-xl border border-white/[0.06]">
               <span className="text-slate-500 block text-[10px]">Leverage Multiplier</span>
               <span className="text-rh-green font-bold">{Math.abs(asset.leverage)}x {asset.isShort ? 'Inverse Short' : 'Constant Long'}</span>
             </div>
-            <div className="bg-black/30 p-2.5 rounded-lg border border-white/[0.04]">
+            <div className="bg-black/40 p-2.5 rounded-xl border border-white/[0.06]">
               <span className="text-slate-500 block text-[10px]">Robinhood Chain State</span>
               <span className={`font-bold ${asset.tokenAddress ? 'text-rh-green' : 'text-slate-400'}`}>
                 {asset.tokenAddress ? 'Deployed On-Chain' : 'Ready to Deploy'}
@@ -255,13 +255,12 @@ export const OracleTerminal: React.FC<OracleTerminalProps> = ({
             </div>
           </div>
 
-
         </div>
 
         {/* Engine Specs Column */}
-        <div className="bg-[#090C10] border border-white/[0.08] rounded-xl p-6 space-y-5 shadow-xl">
+        <div className="glass-panel rounded-2xl p-6 space-y-5 shadow-2xl">
           
-          <div className="flex items-center justify-between border-b border-white/[0.06] pb-3">
+          <div className="flex items-center justify-between border-b border-white/[0.08] pb-3">
             <h3 className="font-bold text-sm text-white font-display">Bounce Rebalance Engine</h3>
             <span className="text-[10px] font-mono text-rh-green bg-rh-green/10 border border-rh-green/20 px-1.5 py-0.5 rounded">
               Active
@@ -269,7 +268,7 @@ export const OracleTerminal: React.FC<OracleTerminalProps> = ({
           </div>
 
           {/* Rebalance Timer */}
-          <div className="bg-[#0C0F15] border border-white/[0.06] rounded p-4 text-center space-y-1">
+          <div className="carbon-inlay rounded-xl p-4 text-center space-y-1">
             <div className="text-[11px] text-slate-400 flex items-center justify-center gap-1 font-mono">
               <Clock className="w-3.5 h-3.5 text-slate-400" />
               <span>Next Automated Rebalance:</span>

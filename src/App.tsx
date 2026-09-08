@@ -66,7 +66,7 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#07090C] text-zinc-100 flex flex-col justify-between selection:bg-white selection:text-black">
+    <div className="min-h-screen bg-forged-carbon text-zinc-100 flex flex-col justify-between selection:bg-rh-green selection:text-black relative">
       <div>
         {/* Clean Single Navbar */}
         <Navbar

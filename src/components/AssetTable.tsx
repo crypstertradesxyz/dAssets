@@ -110,42 +110,42 @@ export const AssetTable: React.FC<AssetTableProps> = ({
 
         {/* Quick Metrics Bar */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 pt-2 font-mono">
-          <div className="bg-[#090C10] border border-white/[0.08] rounded-lg p-4 space-y-1">
-            <span className="text-[11px] text-slate-500 font-sans font-medium uppercase tracking-wider block">
+          <div className="glass-panel glass-panel-hover rounded-xl p-4 space-y-1">
+            <span className="text-[11px] text-slate-400 font-sans font-medium uppercase tracking-wider block">
               Active Catalog
             </span>
             <div className="text-xl sm:text-2xl font-bold text-white">
               {assets.length} Pairs
             </div>
-            <span className="text-[10px] text-slate-400 font-sans">3x & 5x Long/Short</span>
+            <span className="text-[10px] text-slate-400 font-sans">2x, 3x & 5x Multipliers</span>
           </div>
 
-          <div className="bg-[#090C10] border border-white/[0.08] rounded-lg p-4 space-y-1">
-            <span className="text-[11px] text-slate-500 font-sans font-medium uppercase tracking-wider block">
+          <div className="glass-panel glass-panel-hover rounded-xl p-4 space-y-1">
+            <span className="text-[11px] text-slate-400 font-sans font-medium uppercase tracking-wider block">
               Liquidation Risk
             </span>
             <div className="text-xl sm:text-2xl font-bold text-rh-green">
               0% Calls
             </div>
-            <span className="text-[10px] text-slate-400 font-sans">No margin debt</span>
+            <span className="text-[10px] text-slate-400 font-sans">Zero margin debt</span>
           </div>
 
-          <div className="bg-[#090C10] border border-white/[0.08] rounded-lg p-4 space-y-1">
-            <span className="text-[11px] text-slate-500 font-sans font-medium uppercase tracking-wider block">
+          <div className="glass-panel glass-panel-hover rounded-xl p-4 space-y-1">
+            <span className="text-[11px] text-slate-400 font-sans font-medium uppercase tracking-wider block">
               Automated Rebalance
             </span>
             <div className="text-xl sm:text-2xl font-bold text-white">
-              Every 8h
+              00:00 UTC
             </div>
-            <span className="text-[10px] text-slate-400 font-sans">Vault volatility peg</span>
+            <span className="text-[10px] text-slate-400 font-sans">Daily & circuit breaker</span>
           </div>
 
-          <div className="bg-[#090C10] border border-white/[0.08] rounded-lg p-4 space-y-1">
-            <span className="text-[11px] text-slate-500 font-sans font-medium uppercase tracking-wider block">
+          <div className="glass-panel glass-panel-hover rounded-xl p-4 space-y-1">
+            <span className="text-[11px] text-slate-400 font-sans font-medium uppercase tracking-wider block">
               Gas Settlement
             </span>
             <div className="text-xl sm:text-2xl font-bold text-rh-green">
-              ~$0.05
+              ~$0.001
             </div>
             <span className="text-[10px] text-slate-400 font-sans">Robinhood Chain L2</span>
           </div>
@@ -153,23 +153,23 @@ export const AssetTable: React.FC<AssetTableProps> = ({
       </div>
 
       {/* Category Tabs with Animated Indicator */}
-      <div className="flex items-center space-x-1 border-b border-white/[0.06] pb-3 overflow-x-auto text-xs">
+      <div className="flex items-center space-x-1 border-b border-white/[0.08] pb-3 overflow-x-auto text-xs">
         {categories.map((cat) => {
           const isSelected = selectedCategory === cat.key;
           return (
             <button
               key={cat.key}
               onClick={() => setSelectedCategory(cat.key)}
-              className={`relative px-3 py-1.5 rounded-md font-medium transition whitespace-nowrap ${
+              className={`relative px-3.5 py-1.5 rounded-lg font-medium transition whitespace-nowrap ${
                 isSelected
                   ? 'text-white font-semibold'
-                  : 'text-slate-400 hover:text-slate-200'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]'
               }`}
             >
               {isSelected && (
                 <motion.div
                   layoutId="activeCategoryTab"
-                  className="absolute inset-0 bg-white/[0.08] rounded-md -z-10"
+                  className="absolute inset-0 bg-white/[0.12] rounded-lg -z-10 shadow-sm"
                   transition={{ type: 'spring', bounce: 0.2, duration: 0.4 }}
                 />
               )}
@@ -180,7 +180,7 @@ export const AssetTable: React.FC<AssetTableProps> = ({
       </div>
 
       {/* High-Craft Table */}
-      <div className="border border-white/[0.08] rounded-xl overflow-hidden bg-[#090C10] shadow-xl">
+      <div className="glass-panel rounded-2xl overflow-hidden shadow-2xl">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs">
             <thead>

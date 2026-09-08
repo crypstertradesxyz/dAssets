@@ -40,7 +40,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
     <div className="relative min-h-screen text-slate-100 selection:bg-rh-green selection:text-black">
       
       {/* Live Market Marquee Ticker */}
-      <div className="border-b border-white/[0.06] bg-[#060709] py-2 overflow-hidden select-none">
+      <div className="border-b border-white/[0.06] bg-[#060709]/80 backdrop-blur-md py-2 overflow-hidden select-none">
         <div className="animate-marquee items-center gap-8 text-xs font-mono">
           {[...marqueeAssets, ...marqueeAssets].map((item, idx) => {
             const isPos = item.change24h >= 0;
@@ -86,8 +86,8 @@ export const HomeView: React.FC<HomeViewProps> = ({
               Leveraged tokens on Robinhood Chain.
             </h1>
 
-            <p className="text-base sm:text-lg text-slate-400 leading-relaxed max-w-xl font-normal">
-              Hold constant 3x and 5x exposure to 270+ crypto assets without managing margin, borrowing collateral, or facing liquidation risk. Backed by Bounce perpetual vaults and settled on-chain.
+            <p className="text-base sm:text-lg text-slate-300 leading-relaxed max-w-xl font-normal">
+              Hold constant <strong className="text-white font-semibold">2x, 3x, and 5x Long & Inverse Short</strong> exposure across 270+ crypto assets without margin debt, borrowing rates, or liquidation risk.
             </p>
 
             <div className="pt-2 flex flex-wrap items-center gap-3">
@@ -144,20 +144,20 @@ export const HomeView: React.FC<HomeViewProps> = ({
             transition={{ delay: 0.15, duration: 0.5 }}
             className="lg:col-span-5"
           >
-            <div className="bg-[#090C10] border border-white/[0.10] rounded-xl p-5 shadow-2xl space-y-4">
+            <div className="glass-panel glass-panel-hover rounded-2xl p-6 shadow-2xl space-y-4 glow-border-green">
               
               {/* Quick Pair Selector Tabs */}
-              <div className="flex items-center space-x-1 border-b border-white/[0.06] pb-3">
+              <div className="flex items-center space-x-1 border-b border-white/[0.08] pb-3">
                 {quickSymbols.map((sym) => {
                   const isSelected = activeTabSymbol === sym;
                   return (
                     <button
                       key={sym}
                       onClick={() => setActiveTabSymbol(sym)}
-                      className={`px-3 py-1.5 rounded-md text-xs font-medium transition ${
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
                         isSelected 
-                          ? 'bg-white/[0.08] text-white font-semibold' 
-                          : 'text-slate-400 hover:text-slate-200'
+                          ? 'bg-white/[0.12] text-white font-semibold shadow-sm' 
+                          : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]'
                       }`}
                     >
                       {sym}
@@ -169,14 +169,14 @@ export const HomeView: React.FC<HomeViewProps> = ({
               {/* Price & NAV Display */}
               <div className="flex items-baseline justify-between pt-1">
                 <div>
-                  <div className="text-xs text-slate-500">Oracle NAV Price</div>
+                  <div className="text-xs text-slate-400">Oracle NAV Price</div>
                   <div className="text-3xl font-bold text-white font-display mt-0.5">
                     ${activeAsset.currentNav.toFixed(2)}
                   </div>
                 </div>
 
                 <div className="text-right">
-                  <div className="text-xs text-slate-500">24h Change</div>
+                  <div className="text-xs text-slate-400">24h Change</div>
                   <div className={`text-sm font-semibold flex items-center justify-end gap-1 mt-0.5 ${
                     activeAsset.change24h >= 0 ? 'text-rh-green' : 'text-red-400'
                   }`}>
@@ -186,8 +186,8 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 </div>
               </div>
 
-              {/* Asset Details */}
-              <div className="bg-[#0D1016] border border-white/[0.06] rounded-lg p-3 space-y-2 text-xs">
+              {/* Asset Details Inlay */}
+              <div className="carbon-inlay rounded-xl p-3.5 space-y-2 text-xs">
                 <div className="flex justify-between text-slate-400">
                   <span>Underlying Asset:</span>
                   <span className="text-white font-medium">{activeAsset.name} (${activeAsset.indexPrice.toLocaleString()})</span>
@@ -268,43 +268,43 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
         {/* HOW IT WORKS: Human, Direct, Clear */}
         <section className="space-y-6">
-          <div className="border-b border-white/[0.06] pb-3">
+          <div className="border-b border-white/[0.08] pb-3">
             <h2 className="text-base font-bold text-white font-display">
               How dAssets Works
             </h2>
             <p className="text-xs text-slate-400 mt-0.5">
-              Leveraged tokens give you multiplier returns without borrowing or liquidation risk.
+              Leveraged tokens give you multiplier returns without borrowing rates, margin maintenance, or liquidation risk.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="space-y-2">
-              <div className="w-7 h-7 rounded-md bg-white/[0.06] text-white flex items-center justify-center font-bold text-xs font-mono">
-                1
+            <div className="glass-panel glass-panel-hover rounded-2xl p-6 space-y-3">
+              <div className="w-8 h-8 rounded-lg bg-rh-green/10 border border-rh-green/30 text-rh-green flex items-center justify-center font-bold text-xs font-mono">
+                01
               </div>
-              <h3 className="text-sm font-bold text-white">Choose Your Position</h3>
+              <h3 className="text-sm font-bold text-white">Choose Your Multiplier</h3>
               <p className="text-xs text-slate-400 leading-relaxed">
-                Pick from 270+ assets across Bitcoin, Ethereum, Solana, Layer 1s, and DeFi tokens in 3x or 5x long or short multipliers.
+                Pick from 270+ assets across Bitcoin, Ethereum, Solana, Layer 1s, AI, and DeFi in 2x, 3x, or 5x Long & Inverse Short exposure.
               </p>
             </div>
 
-            <div className="space-y-2">
-              <div className="w-7 h-7 rounded-md bg-white/[0.06] text-white flex items-center justify-center font-bold text-xs font-mono">
-                2
+            <div className="glass-panel glass-panel-hover rounded-2xl p-6 space-y-3">
+              <div className="w-8 h-8 rounded-lg bg-sky-500/10 border border-sky-500/30 text-sky-400 flex items-center justify-center font-bold text-xs font-mono">
+                02
               </div>
-              <h3 className="text-sm font-bold text-white">Mint Straight to Wallet</h3>
+              <h3 className="text-sm font-bold text-white">Mint Directly on Robinhood Chain</h3>
               <p className="text-xs text-slate-400 leading-relaxed">
-                Deposit USDC on Robinhood Chain. Hyperlane routes collateral to Bounce vaults on HyperEVM, minting standard ERC-20s to your address.
+                Deposit USDC natively on Robinhood Chain Mainnet (Chain 4663). Tokens mint instantly as standard self-custodial ERC-20s.
               </p>
             </div>
 
-            <div className="space-y-2">
-              <div className="w-7 h-7 rounded-md bg-white/[0.06] text-white flex items-center justify-center font-bold text-xs font-mono">
-                3
+            <div className="glass-panel glass-panel-hover rounded-2xl p-6 space-y-3">
+              <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center font-bold text-xs font-mono">
+                03
               </div>
-              <h3 className="text-sm font-bold text-white">Hold Without Stress</h3>
+              <h3 className="text-sm font-bold text-white">Zero Margin Calls</h3>
               <p className="text-xs text-slate-400 leading-relaxed">
-                Tokens automatically rebalance every 8 hours so your position never gets liquidated. Trade on AMMs or redeem anytime at Oracle NAV.
+                Autonomous on-chain keepers continuously adjust exposure to target leverage. Trade on Uniswap v3 AMMs or redeem anytime at Oracle NAV.
               </p>
             </div>
           </div>

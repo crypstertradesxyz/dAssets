@@ -19,7 +19,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   setActiveView
 }) => {
   return (
-    <header className="border-b border-white/[0.06] bg-[#050608]/90 backdrop-blur-md sticky top-0 z-40">
+    <header className="border-b border-white/[0.08] bg-[#05070A]/80 backdrop-blur-xl sticky top-0 z-40 shadow-xl shadow-black/40">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
         
         {/* Brand & Main Links */}

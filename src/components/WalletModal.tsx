@@ -22,11 +22,11 @@ export const WalletModal: React.FC<WalletModalProps> = ({ wallet, onClose }) => 
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="bg-[#0D1016] border border-white/[0.12] rounded-lg w-full max-w-sm overflow-hidden shadow-2xl relative text-slate-100">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-150">
+      <div className="glass-panel rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl relative text-slate-100 glow-border-green">
         
         {/* Modal Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06] bg-[#0A0D12]">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.08] bg-[#0A0D12]/80 backdrop-blur-md">
           <div className="flex items-center space-x-2.5">
             <div className="w-7 h-7 rounded bg-white/[0.06] border border-white/[0.10] text-slate-300 flex items-center justify-center">
               <Wallet className="w-3.5 h-3.5" />
