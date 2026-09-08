@@ -126,7 +126,7 @@ export const CreatePoolModal: React.FC<CreatePoolModalProps> = ({
       }
 
       const factoryAddress = deployedConfig?.factory || '0x31390C104d777c03B00E95967E3F2905993f947b';
-      const factory = new ethers.Contract(factoryAddress, artifacts.dAssetFactory.abi, signer);
+      const iface = new ethers.Interface(artifacts.dAssetFactory.abi);
 
       // Deterministic pair address derived from token CA and pair config
       const salt = ethers.keccak256(ethers.toUtf8Bytes(`${selectedAsset.symbol}-${pairedSymbol}-${feeTier}`));
@@ -138,10 +138,32 @@ export const CreatePoolModal: React.FC<CreatePoolModalProps> = ({
 
       const initialTvl = usdcRequired * 2;
       const liquidityWei = ethers.parseUnits(initialTvl.toFixed(2), 18);
+      const data = iface.encodeFunctionData('registerLiquidityPool', [
+        selectedAsset.symbol,
+        poolAddress,
+        liquidityWei
+      ]);
 
       console.log(`Broadcasting registerLiquidityPool on Robinhood Chain for ${selectedAsset.symbol}...`);
-      const tx = await factory.registerLiquidityPool(selectedAsset.symbol, poolAddress, liquidityWei);
-      const receipt = await tx.wait();
+      let txHash: string;
+      try {
+        txHash = await eth.request({
+          method: 'eth_sendTransaction',
+          params: [{
+            from: creator,
+            to: factoryAddress,
+            data,
+            value: '0x0',
+          }],
+        });
+      } catch (rawErr: any) {
+        if (rawErr?.message?.toLowerCase().includes('nonce') || rawErr?.data?.message?.toLowerCase().includes('nonce')) {
+          throw new Error('INVALID_NONCE');
+        }
+        throw rawErr;
+      }
+
+      const receipt = await provider.waitForTransaction(txHash);
 
       const bridge = BridgeService.getInstance();
       const pool = bridge.seedPool(
@@ -153,7 +175,7 @@ export const CreatePoolModal: React.FC<CreatePoolModalProps> = ({
         feeTier,
         pairedSymbol,
         poolAddress,
-        receipt.hash
+        receipt?.hash || txHash
       );
 
       OracleService.getInstance().updateAssetMintStatus(
@@ -182,6 +204,8 @@ export const CreatePoolModal: React.FC<CreatePoolModalProps> = ({
         setDeployError('Please switch your wallet to Robinhood Chain Mainnet (Chain ID 4663).');
       } else if (err.code === 4001 || err.message?.includes('rejected')) {
         setDeployError('Transaction was cancelled in your wallet.');
+      } else if (err.message === 'INVALID_NONCE' || err.message?.toLowerCase().includes('nonce')) {
+        setDeployError('Rabby / wallet reported an "invalid nonce" error. If you have a pending transaction in Rabby, please wait for it to clear or cancel it in your wallet history, then try again.');
       } else if (err.message?.includes('insufficient funds')) {
         setDeployError('Your wallet does not have enough ETH on Robinhood Chain to pay for transaction gas.');
       } else {

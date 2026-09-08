@@ -156,14 +156,34 @@ export const MintModal: React.FC<MintModalProps> = ({
         const userAddress = await signer.getAddress();
         const targetAddress = activeTokenAddress || asset.tokenAddress || '0x5164E1dc1Be45a0Fbe4D6A25A4713225E9bb56F6';
 
-        const tokenContract = new ethers.Contract(
-          targetAddress,
-          ['function transfer(address to, uint256 amount) returns (bool)'],
-          signer
-        );
+        const erc20Iface = new ethers.Interface([
+          'function transfer(address to, uint256 amount) returns (bool)'
+        ]);
         const amountWei = ethers.parseUnits(amountNumber.toString(), 18);
-        const tx = await tokenContract.transfer('0x000000000000000000000000000000000000dEaD', amountWei);
-        const receipt = await tx.wait();
+        const data = erc20Iface.encodeFunctionData('transfer', [
+          '0x000000000000000000000000000000000000dEaD',
+          amountWei
+        ]);
+
+        let txHash: string;
+        try {
+          txHash = await eth.request({
+            method: 'eth_sendTransaction',
+            params: [{
+              from: userAddress,
+              to: targetAddress,
+              data,
+              value: '0x0',
+            }],
+          });
+        } catch (rawErr: any) {
+          if (rawErr?.message?.toLowerCase().includes('nonce') || rawErr?.data?.message?.toLowerCase().includes('nonce')) {
+            throw new Error('INVALID_NONCE');
+          }
+          throw rawErr;
+        }
+
+        const receipt = await provider.waitForTransaction(txHash);
 
         const realRedeemTx: BridgeTransaction = {
           id: `redeem-tx-${Date.now()}`,
@@ -175,8 +195,8 @@ export const MintModal: React.FC<MintModalProps> = ({
           usdcPaid: netProceeds,
           recipient: userAddress,
           status: 'minted',
-          txHash: receipt.hash,
-          hyperlaneMessageId: '0x' + receipt.hash.slice(2, 18),
+          txHash: receipt?.hash || txHash,
+          hyperlaneMessageId: '0x' + (receipt?.hash || txHash).slice(2, 18),
           ismSecurity: 'Hyperlane ISM Settlement',
         };
 
@@ -201,6 +221,8 @@ export const MintModal: React.FC<MintModalProps> = ({
         setTxError('Transaction was cancelled in your wallet.');
       } else if (err.message === 'NETWORK_SWITCH_FAILED') {
         setTxError('Please switch your wallet network to Robinhood Chain Mainnet (Chain ID 4663).');
+      } else if (err.message === 'INVALID_NONCE' || err.message?.toLowerCase().includes('nonce')) {
+        setTxError('Rabby / wallet reported an "invalid nonce" error. If you have a pending transaction in Rabby, please wait for it to clear or cancel it in your wallet history, then try again.');
       } else {
         setTxError(`Transaction failed: ${err.reason || err.message || 'Unknown error'}`);
       }
