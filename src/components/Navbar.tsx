@@ -106,6 +106,19 @@ export const Navbar: React.FC<NavbarProps> = ({
         {/* Right Controls: Network & Wallet */}
         <div className="flex items-center space-x-2.5">
           
+          {/* X / Twitter Link */}
+          <a
+            href="https://x.com/dAssetsRH"
+            target="_blank"
+            rel="noreferrer"
+            className="p-2 rounded-md bg-white/[0.04] hover:bg-white/[0.08] text-slate-400 hover:text-white transition flex items-center justify-center border border-white/[0.06]"
+            title="Follow @dAssetsRH on X"
+          >
+            <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+            </svg>
+          </a>
+
           {/* Network Pill */}
           <div className="hidden md:flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] text-xs text-slate-300 font-mono">
             <span className="w-1.5 h-1.5 rounded-full bg-rh-green"></span>

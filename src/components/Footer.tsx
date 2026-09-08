@@ -14,7 +14,18 @@ export const Footer: React.FC = () => {
           <span>Robinhood Chain Mainnet (4663)</span>
         </div>
 
-        <div className="flex items-center space-x-6 text-xs text-zinc-400">
+        <div className="flex flex-wrap items-center space-x-6 text-xs text-zinc-400">
+          <a
+            href="https://x.com/dAssetsRH"
+            target="_blank"
+            rel="noreferrer"
+            className="hover:text-white flex items-center gap-1.5 transition text-slate-200 font-semibold"
+          >
+            <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+            </svg>
+            <span>@dAssetsRH</span>
+          </a>
           <a
             href="https://robinhoodchain.blockscout.com/address/0x31390C104d777c03B00E95967E3F2905993f947b"
             target="_blank"

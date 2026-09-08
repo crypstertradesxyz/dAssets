@@ -252,6 +252,17 @@ export const HomeView: React.FC<HomeViewProps> = ({
               <span className="w-2 h-2 rounded-full bg-rh-green"></span>
               <span className="text-[11px] sm:text-xs">Official Protocol Identity • Robinhood Chain</span>
             </div>
+            <a
+              href="https://x.com/dAssetsRH"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white/10 hover:bg-white/20 backdrop-blur-md text-white text-xs font-semibold transition border border-white/10 shadow-sm"
+            >
+              <svg className="w-3 h-3 fill-current" viewBox="0 0 24 24">
+                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+              </svg>
+              <span>Follow @dAssetsRH</span>
+            </a>
           </div>
         </motion.div>
 
