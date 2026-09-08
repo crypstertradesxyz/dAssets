@@ -12,6 +12,7 @@ import {
 import { CopyButton } from './CopyButton';
 import deployedConfig from '../contracts/deployedAddresses.json';
 import { LeveragedAsset } from '../types';
+import { TokenLogo } from './TokenLogo';
 
 interface HomeViewProps {
   assets: LeveragedAsset[];
@@ -50,6 +51,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 onClick={() => onSelectAsset(item)}
                 className="flex items-center space-x-2.5 cursor-pointer hover:text-white transition px-2 py-0.5 rounded"
               >
+                <TokenLogo underlying={item.underlying} iconColor={item.iconColor} size="xs" />
                 <span className="font-semibold text-slate-200">{item.symbol}</span>
                 <span className="text-white">${item.currentNav.toFixed(2)}</span>
                 <span className={`text-[11px] font-medium flex items-center gap-0.5 ${isPos ? 'text-rh-green' : 'text-red-400'}`}>
@@ -166,6 +168,33 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 })}
               </div>
 
+              {/* Asset Header with Logo */}
+              <div className="flex items-center justify-between pt-1">
+                <div className="flex items-center gap-3">
+                  <TokenLogo 
+                    underlying={activeAsset.underlying} 
+                    iconColor={activeAsset.iconColor} 
+                    size="lg" 
+                    rounded="xl" 
+                  />
+                  <div>
+                    <div className="font-bold text-lg text-white font-display flex items-center gap-2">
+                      <span>{activeAsset.symbol}</span>
+                      <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full ${
+                        activeAsset.isShort 
+                          ? 'bg-red-500/10 text-red-400 border border-red-500/30' 
+                          : 'bg-rh-green/10 text-rh-green border border-rh-green/30'
+                      }`}>
+                        {Math.abs(activeAsset.leverage)}x {activeAsset.isShort ? 'Short' : 'Long'}
+                      </span>
+                    </div>
+                    <div className="text-xs text-slate-400 font-sans">
+                      {activeAsset.name}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               {/* Price & NAV Display */}
               <div className="flex items-baseline justify-between pt-1">
                 <div>
@@ -273,16 +302,12 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2.5">
-                      <div 
-                        className="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs"
-                        style={{
-                          backgroundColor: `${item.iconColor}20`,
-                          color: item.iconColor,
-                          border: `1px solid ${item.iconColor}40`,
-                        }}
-                      >
-                        {item.underlying.slice(0, 3)}
-                      </div>
+                      <TokenLogo 
+                        underlying={item.underlying} 
+                        iconColor={item.iconColor} 
+                        size="md" 
+                        rounded="lg" 
+                      />
                       <div>
                         <div className="font-bold text-white text-sm font-display group-hover:text-rh-green transition-colors">
                           {item.symbol}

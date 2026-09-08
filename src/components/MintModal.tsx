@@ -20,6 +20,7 @@ import { Web3Service } from '../services/web3';
 import { OracleService } from '../services/oracle';
 import { mintGenuineOnChain, addTokenToWallet } from '../services/onChainMint';
 import { CopyButton } from './CopyButton';
+import { TokenLogo } from './TokenLogo';
 
 interface MintModalProps {
   asset: LeveragedAsset;
@@ -197,16 +198,12 @@ export const MintModal: React.FC<MintModalProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.08] bg-[#090C10]/80 backdrop-blur-md">
           <div className="flex items-center space-x-3">
-            <div
-              className="w-8 h-8 rounded-md flex items-center justify-center font-bold text-xs"
-              style={{
-                backgroundColor: `${asset.iconColor}20`,
-                color: asset.iconColor,
-                border: `1px solid ${asset.iconColor}40`,
-              }}
-            >
-              {asset.underlying.slice(0, 3)}
-            </div>
+            <TokenLogo 
+              underlying={asset.underlying} 
+              iconColor={asset.iconColor} 
+              size="md" 
+              rounded="lg" 
+            />
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="font-bold text-sm text-white font-display">{asset.symbol}</h3>

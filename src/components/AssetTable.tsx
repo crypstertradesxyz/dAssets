@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { LeveragedAsset, AssetCategory } from '../types';
 import { CopyButton } from './CopyButton';
+import { TokenLogo } from './TokenLogo';
 
 interface AssetTableProps {
   assets: LeveragedAsset[];
@@ -365,16 +366,12 @@ export const AssetTable: React.FC<AssetTableProps> = ({
                   {/* Card Header: Token Logo, Symbol, Underlying Spot */}
                   <div className="flex items-start justify-between">
                     <div className="flex items-center space-x-3">
-                      <div 
-                        className="w-11 h-11 rounded-xl flex items-center justify-center font-bold text-xs shadow-sm flex-shrink-0"
-                        style={{
-                          backgroundColor: `${group.iconColor}20`,
-                          color: group.iconColor,
-                          border: `1px solid ${group.iconColor}40`,
-                        }}
-                      >
-                        {group.underlying.slice(0, 3)}
-                      </div>
+                      <TokenLogo 
+                        underlying={group.underlying} 
+                        iconColor={group.iconColor} 
+                        size="lg" 
+                        rounded="xl" 
+                      />
                       <div>
                         <div className="flex items-center gap-1.5">
                           <h3 className="font-bold text-white text-base font-display group-hover:text-rh-green transition-colors">
@@ -532,16 +529,12 @@ export const AssetTable: React.FC<AssetTableProps> = ({
                       {/* Asset Info */}
                       <td className="py-4 px-6 font-sans">
                         <div className="flex items-center space-x-3.5">
-                          <div
-                            className="w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs flex-shrink-0 shadow-sm"
-                            style={{
-                              backgroundColor: `${group.iconColor}20`,
-                              color: group.iconColor,
-                              border: `1px solid ${group.iconColor}40`,
-                            }}
-                          >
-                            {group.underlying.slice(0, 3)}
-                          </div>
+                          <TokenLogo 
+                            underlying={group.underlying} 
+                            iconColor={group.iconColor} 
+                            size="md" 
+                            rounded="lg" 
+                          />
                           <div>
                             <div className="font-bold text-base text-white group-hover:text-rh-green transition-colors">
                               {activeToken.symbol}

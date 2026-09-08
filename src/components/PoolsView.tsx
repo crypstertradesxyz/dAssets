@@ -16,6 +16,7 @@ import { LeveragedAsset, WalletState, LiquidityPool } from '../types';
 import { BridgeService } from '../services/bridge';
 import { CopyButton } from './CopyButton';
 import { CreatePoolModal } from './CreatePoolModal';
+import { TokenLogo } from './TokenLogo';
 
 interface PoolsViewProps {
   assets: LeveragedAsset[];
@@ -202,16 +203,12 @@ export const PoolsView: React.FC<PoolsViewProps> = ({
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-2.5">
-                        <div 
-                          className="w-8 h-8 rounded-md flex items-center justify-center font-bold text-xs"
-                          style={{
-                            backgroundColor: asset ? `${asset.iconColor}20` : '#38BDF820',
-                            color: asset ? asset.iconColor : '#38BDF8',
-                            border: `1px solid ${asset ? asset.iconColor : '#38BDF8'}40`,
-                          }}
-                        >
-                          {pool.assetSymbol.replace('d', '').slice(0, 3)}
-                        </div>
+                        <TokenLogo 
+                          symbol={pool.assetSymbol} 
+                          iconColor={asset?.iconColor} 
+                          size="sm" 
+                          rounded="md" 
+                        />
                         <div>
                           <div className="font-bold text-white text-sm font-mono flex items-center gap-1.5">
                             <span>{pool.assetSymbol}</span>
@@ -347,16 +344,12 @@ export const PoolsView: React.FC<PoolsViewProps> = ({
                         {/* Pair Name */}
                         <td className="py-3.5 px-4 font-sans">
                           <div className="flex items-center space-x-2.5">
-                            <div 
-                              className="w-7 h-7 rounded flex items-center justify-center font-bold text-[10px] font-mono"
-                              style={{
-                                backgroundColor: asset ? `${asset.iconColor}20` : '#38BDF820',
-                                color: asset ? asset.iconColor : '#38BDF8',
-                                border: `1px solid ${asset ? asset.iconColor : '#38BDF8'}40`,
-                              }}
-                            >
-                              {pool.assetSymbol.replace('d', '').slice(0, 3)}
-                            </div>
+                            <TokenLogo 
+                              symbol={pool.assetSymbol} 
+                              iconColor={asset?.iconColor} 
+                              size="xs" 
+                              rounded="md" 
+                            />
                             <div>
                               <div className="font-bold text-white font-mono flex items-center gap-1 text-xs">
                                 <span>{pool.assetSymbol}</span>

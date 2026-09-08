@@ -11,6 +11,7 @@ import { LeveragedAsset, WalletState } from '../types';
 import { OracleService } from '../services/oracle';
 import { CopyButton } from './CopyButton';
 import { KeeperTerminal } from './KeeperTerminal';
+import { TokenLogo } from './TokenLogo';
 
 interface OracleTerminalProps {
   asset: LeveragedAsset;
@@ -87,16 +88,12 @@ export const OracleTerminal: React.FC<OracleTerminalProps> = ({
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           
           <div className="flex items-center space-x-4">
-            <div
-              className="w-12 h-12 rounded-lg flex items-center justify-center font-bold text-base font-mono"
-              style={{
-                backgroundColor: `${asset.iconColor}15`,
-                color: asset.iconColor,
-                border: `1px solid ${asset.iconColor}35`,
-              }}
-            >
-              {asset.underlying.slice(0, 3)}
-            </div>
+            <TokenLogo 
+              underlying={asset.underlying} 
+              iconColor={asset.iconColor} 
+              size="xl" 
+              rounded="xl" 
+            />
 
             <div>
               <div className="flex items-center gap-2.5">

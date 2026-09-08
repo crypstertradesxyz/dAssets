@@ -18,6 +18,7 @@ import { LeveragedAsset, WalletState, LiquidityPool } from '../types';
 import { BridgeService } from '../services/bridge';
 import { OracleService } from '../services/oracle';
 import { CopyButton } from './CopyButton';
+import { TokenLogo } from './TokenLogo';
 
 interface CreatePoolModalProps {
   assets: LeveragedAsset[];
@@ -314,16 +315,12 @@ export const CreatePoolModal: React.FC<CreatePoolModalProps> = ({
                       className="w-full flex items-center justify-between bg-[#090C10] border border-white/[0.10] hover:border-white/[0.20] rounded-md px-3.5 py-2.5 text-xs transition text-left"
                     >
                       <div className="flex items-center space-x-2.5">
-                        <div
-                          className="w-6 h-6 rounded flex items-center justify-center font-bold text-[10px]"
-                          style={{
-                            backgroundColor: `${selectedAsset.iconColor}20`,
-                            color: selectedAsset.iconColor,
-                            border: `1px solid ${selectedAsset.iconColor}40`,
-                          }}
-                        >
-                          {selectedAsset.underlying.slice(0, 3)}
-                        </div>
+                        <TokenLogo 
+                          underlying={selectedAsset.underlying} 
+                          iconColor={selectedAsset.iconColor} 
+                          size="sm" 
+                          rounded="md" 
+                        />
                         <div>
                           <span className="font-bold text-white font-mono">{selectedAsset.symbol}</span>
                           <span className="text-slate-400 ml-2 text-[11px] font-sans">({selectedAsset.name})</span>
@@ -357,7 +354,8 @@ export const CreatePoolModal: React.FC<CreatePoolModalProps> = ({
                               }}
                               className="flex items-center justify-between p-2 rounded hover:bg-white/[0.06] cursor-pointer transition text-xs"
                             >
-                              <div className="flex items-center space-x-2">
+                              <div className="flex items-center space-x-2.5">
+                                <TokenLogo underlying={asset.underlying} iconColor={asset.iconColor} size="xs" rounded="sm" />
                                 <span className="font-mono font-bold text-white">{asset.symbol}</span>
                                 <span className="text-slate-400 text-[11px]">{asset.underlying}</span>
                               </div>
