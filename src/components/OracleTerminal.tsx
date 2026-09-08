@@ -10,6 +10,7 @@ import {
 import { LeveragedAsset, WalletState } from '../types';
 import { OracleService } from '../services/oracle';
 import { CopyButton } from './CopyButton';
+import { KeeperTerminal } from './KeeperTerminal';
 
 interface OracleTerminalProps {
   asset: LeveragedAsset;
@@ -332,6 +333,26 @@ export const OracleTerminal: React.FC<OracleTerminalProps> = ({
         </div>
 
       </div>
+
+      {/* Autonomous 24/7 Keeper Console Stream */}
+      <div className="space-y-3 pt-2">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/[0.06] pb-3">
+          <div className="flex items-center space-x-2">
+            <span className="w-2 h-2 rounded-full bg-rh-green animate-pulse" />
+            <h3 className="font-bold text-sm text-white font-display">
+              Autonomous 24/7 Oracle & Rebalancer Terminal
+            </h3>
+          </div>
+          <div className="flex items-center space-x-2 text-[11px] text-slate-400 font-mono">
+            <span className="text-rh-green">Railway Cloud Worker</span>
+            <span>•</span>
+            <span>Robinhood Chain Mainnet (4663)</span>
+          </div>
+        </div>
+
+        <KeeperTerminal />
+      </div>
+
     </motion.div>
   );
 };

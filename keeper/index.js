@@ -69,7 +69,23 @@ const state = {
   walletAddress: null,
   ethBalance: '0.00',
   assetStates: {},
+  recentLogs: [],
 };
+
+function addLog(type, message, extra = {}) {
+  const time = new Date();
+  const entry = {
+    id: `log-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    timestamp: time.toISOString(),
+    timeFormatted: time.toLocaleTimeString('en-US', { hour12: false }),
+    type, // 'CONFIRMED' | 'BROADCAST' | 'STABLE' | 'REBALANCE' | 'INFO' | 'ERROR'
+    message,
+    ...extra,
+  };
+  state.recentLogs.unshift(entry);
+  if (state.recentLogs.length > 50) state.recentLogs.pop();
+  return entry;
+}
 
 // Initialize asset state tracking
 for (const config of ASSETS_CONFIG) {
@@ -239,6 +255,7 @@ async function runKeeperIteration(oracleContract, signer) {
     const rebalCheck = checkRebalanceCondition(assetState, spot);
     if (rebalCheck.shouldRebalance) {
       console.log(`[REBALANCE] Triggering ${symbol} rebalance: ${rebalCheck.reason}`);
+      addLog('REBALANCE', `Triggered ${symbol} rebalance: ${rebalCheck.reason}`, { symbol, nav, spot });
       assetState.baseNav = assetState.currentNav;
       assetState.referencePrice = spot;
       assetState.lastRebalanceTimestamp = Date.now();
@@ -258,6 +275,7 @@ async function runKeeperIteration(oracleContract, signer) {
 
     if (shouldBroadcast) {
       console.log(`[KEEPER] Pushing ${symbol} to Robinhood Chain: NAV=$${nav.toFixed(4)} (diff ${navDiffPct.toFixed(2)}%), Spot=$${spot.toLocaleString()}...`);
+      addLog('BROADCAST', `Pushing ${symbol} on-chain: NAV=$${nav.toFixed(4)}, Spot=$${spot.toLocaleString()}`, { symbol, nav, spot, diffPct: navDiffPct.toFixed(2) });
 
       try {
         const navWei = ethers.parseUnits(nav.toFixed(4), 18);
@@ -276,11 +294,24 @@ async function runKeeperIteration(oracleContract, signer) {
 
         console.log(`✓ ${symbol} Confirmed in Block #${receipt.blockNumber}! Gas used: ${receipt.gasUsed.toString()}`);
         console.log(`  Explorer: https://robinhoodchain.blockscout.com/tx/${receipt.hash}\n`);
+
+        addLog('CONFIRMED', `Confirmed ${symbol} in Block #${receipt.blockNumber}`, {
+          symbol,
+          nav,
+          spot,
+          blockNumber: Number(receipt.blockNumber),
+          txHash: receipt.hash,
+          gasUsed: receipt.gasUsed.toString(),
+        });
       } catch (txErr) {
         console.error(`[ERROR] Failed to update ${symbol} on-chain:`, txErr.message);
+        addLog('ERROR', `Failed to update ${symbol}: ${txErr.message}`, { symbol });
       }
     } else {
       console.log(`[STABLE] ${symbol}: NAV=$${nav.toFixed(4)}, Spot=$${spot.toLocaleString()} (diff: ${navDiffPct.toFixed(3)}%, heartbeat in ${Math.round((HEARTBEAT_INTERVAL_MS - timeSinceLastUpdate) / 1000)}s)`);
+      if (Math.random() < 0.1) {
+        addLog('STABLE', `${symbol}: NAV=$${nav.toFixed(4)}, Spot=$${spot.toLocaleString()}`, { symbol, nav, spot });
+      }
     }
   }
 }
@@ -335,8 +366,16 @@ async function main() {
   const server = http.createServer((req, res) => {
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-    if (req.url === '/health' || req.url === '/') {
+    if (req.method === 'OPTIONS') {
+      res.writeHead(204);
+      res.end();
+      return;
+    }
+
+    if (req.url === '/health' || req.url === '/' || req.url === '/logs') {
       res.writeHead(200);
       res.end(JSON.stringify({
         status: 'ok',
@@ -349,6 +388,7 @@ async function main() {
         lastTxHash: state.lastTxHash,
         uptimeSeconds: Math.floor((Date.now() - state.startedAt) / 1000),
         assets: state.assetStates,
+        recentLogs: state.recentLogs,
       }, null, 2));
     } else {
       res.writeHead(404);
