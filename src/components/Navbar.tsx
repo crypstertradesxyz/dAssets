@@ -19,7 +19,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   setActiveView
 }) => {
   return (
-    <header className="border-b border-white/[0.08] bg-[#080B0F]/90 backdrop-blur-md sticky top-0 z-40">
+    <header className="border-b border-white/[0.06] bg-[#050608]/90 backdrop-blur-md sticky top-0 z-40">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
         
         {/* Brand & Main Links */}
@@ -28,10 +28,10 @@ export const Navbar: React.FC<NavbarProps> = ({
             className="flex items-center space-x-2 cursor-pointer select-none" 
             onClick={() => setActiveView('home')}
           >
-            <div className="w-7 h-7 rounded bg-white text-black flex items-center justify-center font-black text-xs">
+            <div className="w-7 h-7 rounded bg-white text-black flex items-center justify-center font-black text-xs font-display">
               dA
             </div>
-            <span className="font-bold text-sm tracking-tight text-white">dAssets</span>
+            <span className="font-bold text-base tracking-tight text-white font-display">dAssets</span>
           </div>
 
           {/* Navigation Links */}
@@ -83,7 +83,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         <div className="flex items-center space-x-2.5">
           
           {/* Network Pill */}
-          <div className="hidden md:flex items-center space-x-1.5 px-2.5 py-1 rounded bg-white/[0.04] border border-white/[0.08] text-xs text-slate-300 font-mono">
+          <div className="hidden md:flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] text-xs text-slate-300 font-mono">
             <span className="w-1.5 h-1.5 rounded-full bg-rh-green"></span>
             <span>Robinhood (4663)</span>
           </div>
@@ -106,7 +106,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           ) : (
             <button
               onClick={onOpenWalletModal}
-              className="flex items-center gap-1.5 bg-white hover:bg-slate-200 text-black px-3 py-1.5 rounded-md text-xs font-semibold transition active:scale-95 shadow-sm"
+              className="flex items-center gap-1.5 bg-white hover:bg-slate-200 text-black px-3.5 py-1.5 rounded-md text-xs font-semibold transition active:scale-95 shadow-sm"
             >
               <Wallet className="w-3.5 h-3.5" />
               <span>Connect Wallet</span>
