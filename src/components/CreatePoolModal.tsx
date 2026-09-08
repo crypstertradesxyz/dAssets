@@ -641,7 +641,23 @@ export const CreatePoolModal: React.FC<CreatePoolModalProps> = ({
 
                   <div className="grid grid-cols-2 gap-2 font-mono">
                     <div className="bg-[#090C10] border border-white/[0.10] rounded-md p-2.5">
-                      <span className="text-[10px] text-slate-500 block uppercase font-sans font-semibold">Deposit {selectedAsset.symbol}</span>
+                      <div className="flex justify-between items-center">
+                        <span className="text-[10px] text-slate-500 uppercase font-sans font-semibold">Deposit {selectedAsset.symbol}</span>
+                        {wallet.isConnected && (
+                          <div className="flex items-center gap-1.5 text-[10px] font-mono">
+                            <span className="text-slate-400">Bal: <strong className="text-white">{wallet.holdings[selectedAsset.symbol] || 0}</strong></span>
+                            {(wallet.holdings[selectedAsset.symbol] || 0) > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => setAssetAmount(String(wallet.holdings[selectedAsset.symbol]))}
+                                className="px-1 py-0.2 rounded bg-white/[0.08] hover:bg-white/[0.15] text-rh-green font-bold transition text-[9px]"
+                              >
+                                MAX
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
                       <input
                         type="number"
                         min="1"

@@ -125,6 +125,40 @@ export const ContractsView: React.FC = () => {
           </div>
         </motion.div>
 
+        {/* Deployed Token dBTC5L */}
+        <motion.div 
+          whileHover={{ y: -2 }}
+          className="bg-[#090C10] border border-white/[0.08] hover:border-white/[0.16] rounded-xl p-5 space-y-3 transition shadow-sm"
+        >
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <span className="text-white text-xs font-sans font-semibold block">dBTC5L (5x Long)</span>
+              <span className="text-[11px] text-slate-500 font-sans">High-leverage Bitcoin ERC-20 position</span>
+            </div>
+            <CopyButton text="0xE0Df63EDFDC180E256426db9E95E99F40B8B33bF" label="Copy" />
+          </div>
+
+          <div className="text-slate-200 font-medium truncate text-xs bg-[#0D1016] border border-white/[0.04] px-3 py-2 rounded-md">
+            0xE0Df63EDFDC180E256426db9E95E99F40B8B33bF
+          </div>
+
+          <div className="flex items-center justify-between pt-1">
+            <span className="text-[11px] text-rh-green flex items-center gap-1 font-sans">
+              <CheckCircle2 className="w-3 h-3" />
+              <span>Active Token</span>
+            </span>
+            <a
+              href="https://robinhoodchain.blockscout.com/address/0xE0Df63EDFDC180E256426db9E95E99F40B8B33bF"
+              target="_blank"
+              rel="noreferrer"
+              className="text-slate-400 hover:text-white text-[11px] inline-flex items-center gap-1 font-sans hover:underline"
+            >
+              <span>View on Explorer</span>
+              <ExternalLink className="w-3 h-3" />
+            </a>
+          </div>
+        </motion.div>
+
         {/* Oracle Feed */}
         <motion.div 
           whileHover={{ y: -2 }}
