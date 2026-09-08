@@ -10,7 +10,8 @@ import {
   ChevronDown,
   Layers,
   RefreshCw,
-  AlertCircle
+  AlertCircle,
+  AlertTriangle
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { ethers } from 'ethers';
@@ -22,6 +23,7 @@ import { OracleService } from '../services/oracle';
 import { Web3Service } from '../services/web3';
 import { CopyButton } from './CopyButton';
 import { TokenLogo } from './TokenLogo';
+import { waitForReceiptFast } from '../utils/txUtils';
 
 interface CreatePoolModalProps {
   assets: LeveragedAsset[];
@@ -50,6 +52,8 @@ export const CreatePoolModal: React.FC<CreatePoolModalProps> = ({
   const [pickerTab, setPickerTab] = useState<'all' | 'long' | 'short'>('all');
   const [isAssetPickerOpen, setIsAssetPickerOpen] = useState(false);
   const [isDeploying, setIsDeploying] = useState(false);
+  const [deployStep, setDeployStep] = useState<'idle' | 'awaiting_wallet' | 'confirming_tx' | 'indexing'>('idle');
+  const [broadcastTxHash, setBroadcastTxHash] = useState<string | null>(null);
   const [createdPool, setCreatedPool] = useState<LiquidityPool | null>(null);
   const [deployError, setDeployError] = useState<string | null>(null);
   const [isSwitchingChain, setIsSwitchingChain] = useState(false);
@@ -138,6 +142,8 @@ export const CreatePoolModal: React.FC<CreatePoolModalProps> = ({
     }
 
     setIsDeploying(true);
+    setDeployStep('awaiting_wallet');
+    setBroadcastTxHash(null);
 
     try {
       const eth = Web3Service.getInstance().getActiveProvider();
@@ -177,6 +183,7 @@ export const CreatePoolModal: React.FC<CreatePoolModalProps> = ({
       // If the asset token has not yet been registered on-chain, automatically deploy the ERC20 asset contract first
       if (!tokenAddress) {
         console.log(`Auto-deploying asset ${selectedAsset.symbol} to factory before pool registration...`);
+        setDeployStep('awaiting_wallet');
         const hyperevmId = ethers.keccak256(ethers.toUtf8Bytes(selectedAsset.hyperevmAddress || `hyperevm-${selectedAsset.symbol.toLowerCase()}`));
         const deployData = iface.encodeFunctionData('deployAsset', [
           selectedAsset.name,
@@ -205,7 +212,10 @@ export const CreatePoolModal: React.FC<CreatePoolModalProps> = ({
           throw rawErr;
         }
 
-        await provider.waitForTransaction(deployTxHash);
+        setBroadcastTxHash(deployTxHash);
+        setDeployStep('confirming_tx');
+        await waitForReceiptFast(deployTxHash, provider);
+
         const resolved = await OracleService.getInstance().lookupOnChainAsset(selectedAsset.symbol);
         if (!resolved) {
           throw new Error(`Failed to resolve token address for ${selectedAsset.symbol} after deployment.`);
@@ -231,6 +241,9 @@ export const CreatePoolModal: React.FC<CreatePoolModalProps> = ({
       ]);
 
       console.log(`Broadcasting registerLiquidityPool on Robinhood Chain for ${selectedAsset.symbol}...`);
+      setDeployStep('awaiting_wallet');
+      setBroadcastTxHash(null);
+
       let txHash: string;
       try {
         txHash = await eth.request({
@@ -249,7 +262,11 @@ export const CreatePoolModal: React.FC<CreatePoolModalProps> = ({
         throw rawErr;
       }
 
-      const receipt = await provider.waitForTransaction(txHash);
+      setBroadcastTxHash(txHash);
+      setDeployStep('confirming_tx');
+
+      const receipt = await waitForReceiptFast(txHash, provider);
+      setDeployStep('indexing');
 
       const bridge = BridgeService.getInstance();
       const pool = bridge.seedPool(
@@ -299,6 +316,7 @@ export const CreatePoolModal: React.FC<CreatePoolModalProps> = ({
       }
     } finally {
       setIsDeploying(false);
+      setDeployStep('idle');
     }
   };
 
@@ -755,6 +773,61 @@ export const CreatePoolModal: React.FC<CreatePoolModalProps> = ({
                   </div>
                 )}
 
+                {isDeploying && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className={`mb-3 p-3 rounded-xl border text-xs flex items-start gap-2.5 ${
+                      deployStep === 'awaiting_wallet'
+                        ? 'bg-amber-500/10 border-amber-500/20 text-amber-200'
+                        : 'bg-cyan-500/10 border-cyan-500/20 text-cyan-200'
+                    }`}
+                  >
+                    {deployStep === 'awaiting_wallet' ? (
+                      <>
+                        <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5 animate-pulse" />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-amber-300">Action Required in Rabby / Wallet</p>
+                          <p className="text-[11px] text-amber-200/80 mt-0.5 leading-relaxed">
+                            Please open your Rabby / MetaMask window or click your browser extension icon and click <strong>"Sign and Submit"</strong> to broadcast.
+                          </p>
+                        </div>
+                      </>
+                    ) : deployStep === 'confirming_tx' ? (
+                      <>
+                        <Loader2 className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5 animate-spin" />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between">
+                            <span className="font-semibold text-cyan-300">Confirming on Robinhood Chain</span>
+                            {broadcastTxHash && (
+                              <a
+                                href={`https://robinhoodchain.blockscout.com/tx/${broadcastTxHash}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 text-[11px] text-cyan-400 hover:text-cyan-200 underline font-mono ml-2"
+                              >
+                                <span>{broadcastTxHash.slice(0, 6)}...{broadcastTxHash.slice(-4)}</span>
+                                <ExternalLink className="w-3 h-3" />
+                              </a>
+                            )}
+                          </div>
+                          <p className="text-[11px] text-cyan-200/80 mt-0.5 leading-relaxed">
+                            Transaction broadcasted. Polling Robinhood Chain block confirmation...
+                          </p>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 className="w-4 h-4 text-rh-green shrink-0 mt-0.5" />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-white">Indexing Pool</p>
+                          <p className="text-[11px] text-slate-300 mt-0.5">Finalizing liquidity registration on-chain...</p>
+                        </div>
+                      </>
+                    )}
+                  </motion.div>
+                )}
+
                 {/* Action Button */}
                 {!wallet.isConnected ? (
                   <motion.button
@@ -798,7 +871,13 @@ export const CreatePoolModal: React.FC<CreatePoolModalProps> = ({
                     {isDeploying ? (
                       <>
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        <span>Broadcasting Uniswap Pool Deployment...</span>
+                        <span>
+                          {deployStep === 'awaiting_wallet'
+                            ? 'Awaiting Signature in Rabby...'
+                            : deployStep === 'confirming_tx'
+                            ? 'Confirming on Robinhood Chain...'
+                            : 'Finalizing Pool Deployment...'}
+                        </span>
                       </>
                     ) : (
                       <>

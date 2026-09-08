@@ -2,6 +2,7 @@ import { ethers } from 'ethers';
 import artifacts from '../contracts/artifacts.json';
 import deployedConfig from '../contracts/deployedAddresses.json';
 import { Web3Service } from './web3';
+import { waitForReceiptFast } from '../utils/txUtils';
 
 export async function mintGenuineOnChain(
   symbol: string,
@@ -127,7 +128,7 @@ export async function mintGenuineOnChain(
     throw err;
   }
 
-  const receipt = await provider.waitForTransaction(txHash);
+  const receipt = await waitForReceiptFast(txHash, provider);
   
   // Retrieve token address from factory registry
   let tokenAddress: string | undefined;
