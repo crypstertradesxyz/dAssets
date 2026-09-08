@@ -42,8 +42,8 @@ export const MintModal: React.FC<MintModalProps> = ({
 
   const amountNumber = parseFloat(mintAmount) || 0;
   const totalUsdcCost = Number((amountNumber * asset.currentNav).toFixed(2));
-  const bridgeFee = 2.50; // $2.50 Hyperlane relayer voucher
-  const grandTotal = totalUsdcCost + bridgeFee;
+  const bridgeFee = 0.05; // $0.05 Robinhood L2 gas fee
+  const grandTotal = Number((totalUsdcCost + bridgeFee).toFixed(2));
 
   const handleExecuteMint = async () => {
     if (!wallet.isConnected) {

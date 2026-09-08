@@ -102,8 +102,8 @@ baseAssets.forEach((asset) => {
     const symbol = `d${asset.underlying}${suffix}`;
     const name = `${asset.name} ${absLev}x ${isShort ? 'Short' : 'Long'}`;
 
-    // Base NAV calculation (arbitrary standardized starting NAV $100 or linked to price)
-    const baseNav = 100.0;
+    // Standard base NAV for leveraged tokens on Bounce.tech is $1.00
+    const baseNav = 1.00;
     // Generate deterministic pseudo-realistic 24h change & volume
     const seed = (asset.spotPrice * 13 + absLev * 7 + (isShort ? 31 : 17)) % 100;
     const change24h = ((seed - 48) / 10) * absLev;
