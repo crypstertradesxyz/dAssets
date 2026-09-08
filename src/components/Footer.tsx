@@ -102,6 +102,23 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
           </nav>
         </div>
 
+        {/* Main Token CA */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 py-3 px-4 bg-white/[0.02] border border-white/[0.06] rounded-lg text-xs">
+          <div className="flex items-center gap-2">
+            <span className="text-slate-400 font-medium">Main CA:</span>
+            <span className="text-white font-mono font-bold tracking-wider text-[11px]">0x636676f3979976113783f3bdceac8b18cd1b4fcc</span>
+          </div>
+          <a
+            href="https://robinhoodchain.blockscout.com/address/0x636676f3979976113783f3bdceac8b18cd1b4fcc"
+            target="_blank"
+            rel="noreferrer"
+            className="text-rh-green hover:text-white flex items-center gap-1 transition font-mono text-[11px]"
+          >
+            <span>View on Blockscout</span>
+            <ExternalLink className="w-3 h-3" />
+          </a>
+        </div>
+
         {/* Bottom Row: Social & External Links */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-zinc-400">
           <p className="text-slate-500">

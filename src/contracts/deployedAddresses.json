@@ -4,6 +4,7 @@
   "oracle": "0x0c19e8DE99BA135aBdc059b34e0d3F9E5e021fd0",
   "hyperlaneMailbox": "0x3a867fCfFeC2B790970eeBDC9023E75B0a172aa7",
   "factory": "0x31390C104d777c03B00E95967E3F2905993f947b",
+  "mainToken": "0x636676f3979976113783f3bdceac8b18cd1b4fcc",
   "flagshipToken": {
     "symbol": "dBTC3L",
     "address": "0x5164E1dc1Be45a0Fbe4D6A25A4713225E9bb56F6"

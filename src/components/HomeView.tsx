@@ -198,6 +198,25 @@ export const HomeView: React.FC<HomeViewProps> = ({
               </a>
             </div>
 
+            {/* Main Token Contract Address */}
+            <div className="flex items-center gap-3 bg-[#0A0D13] border border-white/[0.08] rounded-xl px-4 py-2.5 max-w-fit">
+              <div className="flex items-center gap-2 text-xs">
+                <span className="text-slate-400 font-sans font-medium">Main CA:</span>
+                <span className="text-white font-mono font-bold text-[11px] tracking-wide">
+                  {(deployedConfig as any)?.mainToken || '0x636676f3979976113783f3bdceac8b18cd1b4fcc'}
+                </span>
+                <CopyButton text={(deployedConfig as any)?.mainToken || '0x636676f3979976113783f3bdceac8b18cd1b4fcc'} label="" />
+              </div>
+              <a
+                href={`https://robinhoodchain.blockscout.com/address/${(deployedConfig as any)?.mainToken || '0x636676f3979976113783f3bdceac8b18cd1b4fcc'}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-rh-green hover:text-white text-[10px] font-mono transition"
+              >
+                Blockscout ↗
+              </a>
+            </div>
+
             {/* 3-Step Quick Start Explainer */}
             <div className="pt-2 grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
               <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-3 space-y-1">

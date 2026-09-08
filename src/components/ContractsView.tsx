@@ -19,6 +19,8 @@ export const ContractsView: React.FC = () => {
   const mailboxAddress = deployedConfig?.hyperlaneMailbox || '0x3a867fCfFeC2B790970eeBDC9023E75B0a172aa7';
   const hyperevmMailbox = '0x3a464f746D23Ab22155710f44dB16dcA53e0775E';
 
+  const mainTokenAddress = (deployedConfig as any)?.mainToken || '0x636676f3979976113783f3bdceac8b18cd1b4fcc';
+
   return (
     <motion.div 
       initial={{ opacity: 0, y: 12 }}
@@ -53,6 +55,40 @@ export const ContractsView: React.FC = () => {
           <ExternalLink className="w-3.5 h-3.5" />
         </a>
       </div>
+
+      {/* Main Token CA — Full Width Featured */}
+      <motion.div 
+        whileHover={{ y: -2 }}
+        className="bg-gradient-to-r from-rh-green/[0.06] to-[#090C10] border border-rh-green/20 hover:border-rh-green/40 rounded-xl p-6 space-y-3 transition shadow-lg"
+      >
+        <div className="flex items-center justify-between">
+          <div className="space-y-0.5">
+            <span className="text-white text-sm font-sans font-bold block">Main Token CA</span>
+            <span className="text-[11px] text-slate-400 font-sans">Primary dAssets protocol token on Robinhood Chain</span>
+          </div>
+          <CopyButton text={mainTokenAddress} label="Copy" />
+        </div>
+
+        <div className="text-white font-bold truncate text-sm font-mono bg-[#0D1016] border border-rh-green/10 px-4 py-3 rounded-lg tracking-wider">
+          {mainTokenAddress}
+        </div>
+
+        <div className="flex items-center justify-between pt-1">
+          <span className="text-[11px] text-rh-green flex items-center gap-1 font-sans font-semibold">
+            <CheckCircle2 className="w-3.5 h-3.5" />
+            <span>Verified On-Chain • Robinhood Chain 4663</span>
+          </span>
+          <a
+            href={`https://robinhoodchain.blockscout.com/address/${mainTokenAddress}`}
+            target="_blank"
+            rel="noreferrer"
+            className="text-rh-green hover:text-white text-[11px] flex items-center gap-1 transition font-semibold"
+          >
+            <span>View on Blockscout</span>
+            <ExternalLink className="w-3 h-3" />
+          </a>
+        </div>
+      </motion.div>
 
       {/* Core Contracts Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-mono">
