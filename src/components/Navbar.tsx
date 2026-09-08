@@ -8,8 +8,8 @@ import { WalletState } from '../types';
 interface NavbarProps {
   wallet: WalletState;
   onOpenWalletModal: () => void;
-  activeView: 'home' | 'markets' | 'terminal' | 'bridge';
-  setActiveView: (view: 'home' | 'markets' | 'terminal' | 'bridge') => void;
+  activeView: 'home' | 'markets' | 'terminal' | 'bridge' | 'contracts';
+  setActiveView: (view: 'home' | 'markets' | 'terminal' | 'bridge' | 'contracts') => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -75,6 +75,16 @@ export const Navbar: React.FC<NavbarProps> = ({
               }`}
             >
               Hyperlane
+            </button>
+            <button
+              onClick={() => setActiveView('contracts')}
+              className={`px-3 py-1.5 rounded-md text-xs font-medium transition ${
+                activeView === 'contracts'
+                  ? 'text-white bg-white/[0.08]'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              Contracts
             </button>
           </nav>
         </div>

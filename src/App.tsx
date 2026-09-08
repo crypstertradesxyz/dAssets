@@ -4,6 +4,7 @@ import { HomeView } from './components/HomeView';
 import { AssetTable } from './components/AssetTable';
 import { OracleTerminal } from './components/OracleTerminal';
 import { BridgeExplorer } from './components/BridgeExplorer';
+import { ContractsView } from './components/ContractsView';
 import { MintModal } from './components/MintModal';
 import { SeedPoolModal } from './components/SeedPoolModal';
 import { WalletModal } from './components/WalletModal';
@@ -26,7 +27,7 @@ export const App: React.FC = () => {
     isDemo: false,
   });
 
-  const [activeView, setActiveView] = useState<'home' | 'markets' | 'terminal' | 'bridge'>('home');
+  const [activeView, setActiveView] = useState<'home' | 'markets' | 'terminal' | 'bridge' | 'contracts'>('home');
   const [selectedAsset, setSelectedAsset] = useState<LeveragedAsset>(
     INITIAL_ASSETS.find(a => a.symbol === 'dBTC3L') || INITIAL_ASSETS[0]
   );
@@ -81,6 +82,7 @@ export const App: React.FC = () => {
               onExploreMarkets={() => setActiveView('markets')}
               onSelectAsset={handleSelectAsset}
               onMintAsset={(asset) => setMintAsset(asset)}
+              onOpenContracts={() => setActiveView('contracts')}
             />
           </main>
         )}
@@ -112,6 +114,12 @@ export const App: React.FC = () => {
         {activeView === 'bridge' && (
           <main>
             <BridgeExplorer />
+          </main>
+        )}
+
+        {activeView === 'contracts' && (
+          <main>
+            <ContractsView />
           </main>
         )}
       </div>

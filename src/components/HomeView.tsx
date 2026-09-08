@@ -6,9 +6,8 @@ import {
   Zap, 
   TrendingUp, 
   TrendingDown,
-  Shield,
-  Layers,
-  ArrowUpRight
+  ShieldCheck,
+  FileCode
 } from 'lucide-react';
 import { CopyButton } from './CopyButton';
 import deployedConfig from '../contracts/deployedAddresses.json';
@@ -19,6 +18,7 @@ interface HomeViewProps {
   onExploreMarkets: () => void;
   onSelectAsset: (asset: LeveragedAsset) => void;
   onMintAsset: (asset: LeveragedAsset) => void;
+  onOpenContracts: () => void;
 }
 
 export const HomeView: React.FC<HomeViewProps> = ({ 
@@ -26,11 +26,9 @@ export const HomeView: React.FC<HomeViewProps> = ({
   onExploreMarkets, 
   onSelectAsset,
   onMintAsset,
+  onOpenContracts,
 }) => {
   const factoryAddress = deployedConfig?.factory || '0x31390C104d777c03B00E95967E3F2905993f947b';
-  const flagshipAddress = deployedConfig?.flagshipToken?.address || '0x5164E1dc1Be45a0Fbe4D6A25A4713225E9bb56F6';
-  const oracleAddress = deployedConfig?.oracle || '0x0c19e8DE99BA135aBdc059b34e0d3F9E5e021fd0';
-  const mailboxAddress = deployedConfig?.hyperlaneMailbox || '0x3a867fCfFeC2B790970eeBDC9023E75B0a172aa7';
 
   const [activeTabSymbol, setActiveTabSymbol] = useState('dBTC3L');
   const activeAsset = assets.find(a => a.symbol === activeTabSymbol) || assets[0];
@@ -113,15 +111,13 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 <span>Mint {activeAsset.symbol}</span>
               </motion.button>
 
-              <a
-                href={`https://robinhoodchain.blockscout.com/address/${factoryAddress}`}
-                target="_blank"
-                rel="noreferrer"
+              <button
+                onClick={onOpenContracts}
                 className="flex items-center gap-1.5 text-slate-400 hover:text-white text-xs px-3 py-3 transition font-mono"
               >
-                <span>Factory</span>
-                <ExternalLink className="w-3 h-3" />
-              </a>
+                <FileCode className="w-3.5 h-3.5 text-slate-400" />
+                <span>Verified Contracts</span>
+              </button>
             </div>
 
             {/* Quick Metrics Bar */}
@@ -274,120 +270,6 @@ export const HomeView: React.FC<HomeViewProps> = ({
               </p>
             </div>
           </div>
-        </section>
-
-
-        {/* VERIFIED CONTRACTS: Authoritative & 1-Click Copyable */}
-        <section className="bg-[#080B0F] border border-white/[0.08] rounded-xl p-6 sm:p-8 space-y-6">
-          
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/[0.06] pb-4">
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-base font-bold text-white font-display">Robinhood Chain Mainnet Registry</h2>
-                <span className="text-[10px] bg-rh-green/10 text-rh-green border border-rh-green/20 px-2 py-0.5 rounded font-mono font-semibold">
-                  CHAIN 4663
-                </span>
-              </div>
-              <p className="text-xs text-slate-400 mt-1">
-                Verified smart contracts deployed on Robinhood Chain.
-              </p>
-            </div>
-
-            <a
-              href="https://robinhoodchain.blockscout.com"
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-white transition font-mono"
-            >
-              <span>Blockscout Explorer</span>
-              <ExternalLink className="w-3 h-3" />
-            </a>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-mono">
-            
-            {/* Factory */}
-            <div className="bg-[#0D1016] border border-white/[0.06] rounded-lg p-4 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-slate-400 text-[11px] font-sans font-medium">dAsset Factory</span>
-                <CopyButton text={factoryAddress} label="Copy" />
-              </div>
-              <div className="text-slate-200 font-medium truncate text-xs">
-                {factoryAddress}
-              </div>
-              <a
-                href={`https://robinhoodchain.blockscout.com/address/${factoryAddress}`}
-                target="_blank"
-                rel="noreferrer"
-                className="text-rh-green hover:underline text-[11px] inline-flex items-center gap-1 font-sans"
-              >
-                <span>View on Explorer</span>
-                <ExternalLink className="w-3 h-3" />
-              </a>
-            </div>
-
-            {/* Flagship Token */}
-            <div className="bg-[#0D1016] border border-white/[0.06] rounded-lg p-4 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-slate-400 text-[11px] font-sans font-medium">Flagship dBTC3L (3x Long)</span>
-                <CopyButton text={flagshipAddress} label="Copy" />
-              </div>
-              <div className="text-slate-200 font-medium truncate text-xs">
-                {flagshipAddress}
-              </div>
-              <a
-                href={`https://robinhoodchain.blockscout.com/address/${flagshipAddress}`}
-                target="_blank"
-                rel="noreferrer"
-                className="text-rh-green hover:underline text-[11px] inline-flex items-center gap-1 font-sans"
-              >
-                <span>View on Explorer</span>
-                <ExternalLink className="w-3 h-3" />
-              </a>
-            </div>
-
-            {/* Oracle Feed */}
-            <div className="bg-[#0D1016] border border-white/[0.06] rounded-lg p-4 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-slate-400 text-[11px] font-sans font-medium">Robinhood NAV Oracle</span>
-                <CopyButton text={oracleAddress} label="Copy" />
-              </div>
-              <div className="text-slate-200 font-medium truncate text-xs">
-                {oracleAddress}
-              </div>
-              <a
-                href={`https://robinhoodchain.blockscout.com/address/${oracleAddress}`}
-                target="_blank"
-                rel="noreferrer"
-                className="text-rh-green hover:underline text-[11px] inline-flex items-center gap-1 font-sans"
-              >
-                <span>View on Explorer</span>
-                <ExternalLink className="w-3 h-3" />
-              </a>
-            </div>
-
-            {/* Hyperlane Mailbox */}
-            <div className="bg-[#0D1016] border border-white/[0.06] rounded-lg p-4 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-slate-400 text-[11px] font-sans font-medium">Hyperlane Mailbox (Domain 4663)</span>
-                <CopyButton text={mailboxAddress} label="Copy" />
-              </div>
-              <div className="text-slate-200 font-medium truncate text-xs">
-                {mailboxAddress}
-              </div>
-              <a
-                href={`https://robinhoodchain.blockscout.com/address/${mailboxAddress}`}
-                target="_blank"
-                rel="noreferrer"
-                className="text-rh-green hover:underline text-[11px] inline-flex items-center gap-1 font-sans"
-              >
-                <span>Official Mailbox Deployment</span>
-                <ExternalLink className="w-3 h-3" />
-              </a>
-            </div>
-
-          </div>
-
         </section>
 
       </div>
