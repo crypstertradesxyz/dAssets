@@ -21,6 +21,7 @@ import { BridgeService } from '../services/bridge';
 import { Web3Service } from '../services/web3';
 import { TokenLogo } from './TokenLogo';
 import { CopyButton } from './CopyButton';
+import { getUniswapSwapUrl, getBlockscoutAddressUrl } from '../utils/uniswap';
 
 interface PortfolioViewProps {
   assets: LeveragedAsset[];
@@ -459,17 +460,17 @@ export const PortfolioView: React.FC<PortfolioViewProps> = ({
                               {/* Actions */}
                               <td className="py-3.5 px-4 text-right">
                                 <div className="flex items-center justify-end gap-1.5 font-sans">
-                                  {/* Direct Uniswap Link */}
-                                  {h.asset?.poolAddress && (
+                                  {/* Direct Uniswap Trade Link */}
+                                  {(h.asset?.tokenAddress || h.asset?.poolAddress) && (
                                     <a
-                                      href={`https://app.uniswap.org/explore/pools/4663/${h.asset.poolAddress}`}
+                                      href={getUniswapSwapUrl(h.asset?.tokenAddress)}
                                       target="_blank"
                                       rel="noopener noreferrer"
-                                      className="bg-pink-500/10 hover:bg-pink-500/20 text-pink-400 hover:text-pink-300 border border-pink-500/25 px-2.5 py-1.5 rounded text-xs font-semibold transition inline-flex items-center gap-1"
-                                      title="Trade on Uniswap"
+                                      className="bg-pink-500/10 hover:bg-pink-500/20 text-pink-400 hover:text-pink-300 border border-pink-500/25 px-2.5 py-1.5 rounded text-xs font-semibold transition inline-flex items-center gap-1 cursor-pointer"
+                                      title="Trade on Uniswap (Robinhood Chain)"
                                     >
                                       <img src="/logos/uni.png" alt="Uniswap" className="w-3 h-3 rounded-full" />
-                                      <span>Uniswap</span>
+                                      <span>Trade</span>
                                       <ExternalLink className="w-2.5 h-2.5 opacity-70" />
                                     </a>
                                   )}
@@ -534,6 +535,7 @@ export const PortfolioView: React.FC<PortfolioViewProps> = ({
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {userLpPools.map((pool: LiquidityPool) => {
                       const poolUsd = pool.tvlUsd || pool.usdcAmount * 2;
+                      const asset = assets.find(a => a.symbol === pool.assetSymbol);
                       return (
                         <div 
                           key={pool.poolAddress}
@@ -549,12 +551,13 @@ export const PortfolioView: React.FC<PortfolioViewProps> = ({
                                   <span className="text-slate-300">{pool.pairedSymbol || 'USDC'}</span>
                                 </div>
                                 <a
-                                  href={`https://app.uniswap.org/explore/pools/4663/${pool.poolAddress}`}
+                                  href={getBlockscoutAddressUrl(pool.poolAddress)}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="text-[10px] text-pink-400 hover:text-pink-300 font-sans flex items-center gap-1"
+                                  className="text-[10px] text-rh-green hover:underline font-sans flex items-center gap-1"
+                                  title="View on Robinhood Blockscout Explorer"
                                 >
-                                  <span>Uniswap v3 • {pool.feeTier || '0.30%'}</span>
+                                  <span>Pool on Blockscout • {pool.feeTier || '0.30%'}</span>
                                   <ExternalLink className="w-2.5 h-2.5" />
                                 </a>
                               </div>
@@ -588,22 +591,24 @@ export const PortfolioView: React.FC<PortfolioViewProps> = ({
                             </div>
 
                             <div className="flex items-center gap-2">
+                              {/* Direct Uniswap Trade on Robinhood Chain */}
                               <a
-                                href={`https://app.uniswap.org/explore/pools/4663/${pool.poolAddress}`}
+                                href={getUniswapSwapUrl(asset?.tokenAddress)}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="bg-pink-500 hover:bg-pink-400 text-white font-semibold px-3 py-1.5 rounded-md text-xs transition flex items-center gap-1.5 shadow-sm"
+                                title="Trade Pair on Uniswap"
                               >
                                 <img src="/logos/uni.png" alt="Uniswap" className="w-3.5 h-3.5 rounded-full bg-white p-0.5" />
-                                <span>Uniswap ↗</span>
+                                <span>Trade ↗</span>
                               </a>
 
                               <a
-                                href={`https://robinhoodchain.blockscout.com/address/${pool.poolAddress}`}
+                                href={getBlockscoutAddressUrl(pool.poolAddress)}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="p-1.5 bg-white/[0.04] hover:bg-white/[0.08] rounded-md text-slate-400 hover:text-white transition"
-                                title="Blockscout Contract"
+                                title="Blockscout Verified Contract"
                               >
                                 <ExternalLink className="w-3.5 h-3.5" />
                               </a>

@@ -12,6 +12,7 @@ import { LeveragedAsset, WalletState, LiquidityPool } from '../types';
 import { BridgeService } from '../services/bridge';
 import { OracleService } from '../services/oracle';
 import { CopyButton } from './CopyButton';
+import { getUniswapSwapUrl, getBlockscoutAddressUrl } from '../utils/uniswap';
 
 interface SeedPoolModalProps {
   asset: LeveragedAsset;
@@ -141,18 +142,29 @@ export const SeedPoolModal: React.FC<SeedPoolModalProps> = ({
 
               <div className="space-y-2">
                 <a
-                  href={`https://app.uniswap.org/explore/pools/4663/${createdPool.poolAddress}`}
+                  href={getUniswapSwapUrl(asset.tokenAddress)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full py-2.5 px-4 bg-pink-500 hover:bg-pink-400 text-white font-semibold rounded-md text-xs transition flex items-center justify-center gap-2 shadow-lg shadow-pink-500/20"
+                  className="w-full py-2.5 px-4 bg-pink-500 hover:bg-pink-400 text-white font-semibold rounded-md text-xs transition flex items-center justify-center gap-2 shadow-lg shadow-pink-500/20 cursor-pointer"
+                  title="Trade on Uniswap (Robinhood Chain)"
                 >
                   <img src="/logos/uni.png" alt="Uniswap" className="w-4 h-4 rounded-full bg-white p-0.5" />
-                  <span>Open Pool on Uniswap v3</span>
+                  <span>Trade Pair on Uniswap</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </a>
+                <a
+                  href={getBlockscoutAddressUrl(createdPool.poolAddress)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full py-2.5 px-4 bg-white/[0.06] hover:bg-white/[0.12] text-slate-200 font-semibold rounded-md text-xs transition flex items-center justify-center gap-2 cursor-pointer"
+                  title="View Contract on Robinhood Blockscout"
+                >
+                  <span>Verify Pool on Blockscout</span>
                   <ExternalLink className="w-3.5 h-3.5" />
                 </a>
                 <button
                   onClick={onClose}
-                  className="w-full py-2.5 px-4 bg-white/[0.06] hover:bg-white/[0.12] text-white font-semibold rounded-md text-xs transition"
+                  className="w-full py-2 px-4 bg-transparent hover:bg-white/[0.04] text-slate-400 hover:text-white font-medium rounded-md text-xs transition"
                 >
                   Done
                 </button>

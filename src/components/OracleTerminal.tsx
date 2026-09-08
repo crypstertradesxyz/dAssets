@@ -12,6 +12,7 @@ import { OracleService } from '../services/oracle';
 import { CopyButton } from './CopyButton';
 import { KeeperTerminal } from './KeeperTerminal';
 import { TokenLogo } from './TokenLogo';
+import { getUniswapSwapUrl } from '../utils/uniswap';
 
 interface OracleTerminalProps {
   asset: LeveragedAsset;
@@ -194,15 +195,15 @@ export const OracleTerminal: React.FC<OracleTerminalProps> = ({
                 <span>Seed Pool</span>
               </motion.button>
 
-              {asset.poolAddress && (
+              {(asset.tokenAddress || asset.poolAddress) && (
                 <motion.a
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  href={`https://app.uniswap.org/explore/pools/4663/${asset.poolAddress}`}
+                  href={getUniswapSwapUrl(asset.tokenAddress)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 bg-pink-500/10 hover:bg-pink-500/20 text-pink-400 hover:text-pink-300 border border-pink-500/25 px-3.5 py-2.5 rounded-md text-xs font-medium transition"
-                  title="Trade on Uniswap v3"
+                  className="flex items-center gap-1.5 bg-pink-500/10 hover:bg-pink-500/20 text-pink-400 hover:text-pink-300 border border-pink-500/25 px-3.5 py-2.5 rounded-md text-xs font-medium transition cursor-pointer"
+                  title="Trade on Uniswap (Robinhood Chain)"
                 >
                   <img src="/logos/uni.png" alt="Uniswap" className="w-3.5 h-3.5 rounded-full" />
                   <span>Trade on Uniswap</span>
