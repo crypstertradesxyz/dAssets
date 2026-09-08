@@ -7,6 +7,8 @@ export function getUrlForView(view: AppView, assetSymbol?: string): string {
   switch (view) {
     case 'home':
       return '/';
+    case 'trade':
+      return assetSymbol ? `/trade/${assetSymbol}` : '/trade';
     case 'markets':
       return '/markets';
     case 'pools':
@@ -37,6 +39,26 @@ export function parseCurrentUrl(
   const params = new URLSearchParams(search);
   const queryAsset = params.get('asset') || params.get('token') || params.get('symbol');
 
+  // 0. Trade / Swap (e.g. /trade, /swap, /trade/dBTC3L)
+  if (cleanPath.startsWith('/trade') || cleanPath.startsWith('/swap')) {
+    const parts = cleanPath.split('/').filter(Boolean);
+    const targetSymbolOrUnderlying = parts[1] || queryAsset;
+
+    if (targetSymbolOrUnderlying && assets.length > 0) {
+      const q = targetSymbolOrUnderlying.toLowerCase();
+      let found = assets.find(a => a.symbol.toLowerCase() === q);
+      if (!found) {
+        found = assets.find(a => a.underlying.toLowerCase() === q && a.leverage === 3 && !a.isShort) ||
+                assets.find(a => a.underlying.toLowerCase() === q);
+      }
+      if (found) {
+        return { view: 'trade', asset: found };
+      }
+    }
+
+    return { view: 'trade' };
+  }
+
   // 1. Markets
   if (cleanPath === '/markets' || cleanPath === '/market') {
     return { view: 'markets' };
@@ -57,13 +79,13 @@ export function parseCurrentUrl(
     return { view: 'bridge' };
   }
 
-  // 4. Contracts
+  // 5. Contracts
   if (cleanPath === '/contracts' || cleanPath === '/contract' || cleanPath === '/addresses') {
     return { view: 'contracts' };
   }
 
-  // 5. Terminal (e.g. /terminal, /terminal/dBTC3L, /terminal/btc, /terminal/sol5l)
-  if (cleanPath.startsWith('/terminal') || cleanPath.startsWith('/trade') || cleanPath.startsWith('/feed')) {
+  // 6. Terminal (e.g. /terminal, /terminal/dBTC3L, /terminal/btc, /terminal/sol5l)
+  if (cleanPath.startsWith('/terminal') || cleanPath.startsWith('/oracle') || cleanPath.startsWith('/feed')) {
     const parts = cleanPath.split('/').filter(Boolean);
     // parts[0] is 'terminal', parts[1] might be 'dbtc3l' or 'btc'
     const targetSymbolOrUnderlying = parts[1] || queryAsset;
@@ -97,6 +119,15 @@ export function updatePageMetadata(view: AppView, asset?: LeveragedAsset) {
   let desc = 'Non-liquidatable 2x, 3x, and 5x leveraged crypto positions natively engineered for Robinhood Chain Mainnet.';
 
   switch (view) {
+    case 'trade':
+      if (asset) {
+        title = `Trade ${asset.symbol} — Swap ETH for Leveraged Tokens | dAssets`;
+        desc = `Swap Robinhood Chain ETH for ${asset.name} or convert back to regular ETH on Uniswap and Oracle NAV.`;
+      } else {
+        title = 'Instant Swap & Trade | dAssets';
+        desc = 'Swap Robinhood Chain ETH for constant 2x, 3x, and 5x leveraged tokens, or convert back to regular ETH anytime.';
+      }
+      break;
     case 'markets':
       title = 'Markets (270+ Leveraged Pairs) | dAssets';
       desc = 'Browse over 270+ tokenized crypto assets with automated on-chain rebalancing on Robinhood Chain.';

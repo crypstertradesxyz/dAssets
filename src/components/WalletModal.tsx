@@ -16,15 +16,23 @@ import { WalletState, AppView, LeveragedAsset, LiquidityPool } from '../types';
 import { Web3Service, ROBINHOOD_CHAIN } from '../services/web3';
 import { BridgeService } from '../services/bridge';
 import { CopyButton } from './CopyButton';
+import { getUniswapSellUrl } from '../utils/uniswap';
 
 interface WalletModalProps {
   wallet: WalletState;
   onClose: () => void;
-  onNavigate?: (view: AppView) => void;
+  onNavigate?: (view: AppView, asset?: LeveragedAsset) => void;
   assets?: LeveragedAsset[];
+  onMintAsset?: (asset: LeveragedAsset, initialTab?: 'mint' | 'redeem') => void;
 }
 
-export const WalletModal: React.FC<WalletModalProps> = ({ wallet, onClose, onNavigate, assets }) => {
+export const WalletModal: React.FC<WalletModalProps> = ({ 
+  wallet, 
+  onClose, 
+  onNavigate, 
+  assets,
+  onMintAsset,
+}) => {
   const web3 = Web3Service.getInstance();
   const [isConnecting, setIsConnecting] = useState(false);
   const [connectingType, setConnectingType] = useState<string | null>(null);
@@ -45,7 +53,7 @@ export const WalletModal: React.FC<WalletModalProps> = ({ wallet, onClose, onNav
         const asset = assets?.find(a => a.symbol === symbol);
         const nav = asset?.currentNav || 1.0;
         const usd = qty * nav;
-        return { symbol, qty, nav, usd };
+        return { symbol, qty, nav, usd, asset };
       });
   }, [wallet.holdings, assets]);
 
@@ -217,16 +225,46 @@ export const WalletModal: React.FC<WalletModalProps> = ({ wallet, onClose, onNav
                   </div>
                   <div className="space-y-2 pt-1 border-t border-white/[0.04]">
                     {activeHoldings.map((h) => (
-                      <div key={h.symbol} className="flex justify-between items-center text-xs">
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-bold text-white font-mono">{h.symbol}</span>
-                          <span className="text-slate-400 text-[10px]">({h.qty.toFixed(2)})</span>
+                      <div key={h.symbol} className="p-2.5 rounded-lg bg-white/[0.02] border border-white/[0.04] space-y-1.5">
+                        <div className="flex justify-between items-center text-xs">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-bold text-white font-mono">{h.symbol}</span>
+                            <span className="text-slate-400 text-[10px]">({h.qty.toLocaleString()} held)</span>
+                          </div>
+                          <span className="text-rh-green font-mono font-bold">${h.usd.toFixed(2)}</span>
                         </div>
-                        <span className="text-rh-green font-mono font-bold">${h.usd.toFixed(2)}</span>
+
+                        {/* Quick Exit / Action Buttons */}
+                        <div className="flex items-center justify-end gap-1.5 pt-1">
+                          {h.asset?.tokenAddress && (
+                            <a
+                              href={getUniswapSellUrl(h.asset.tokenAddress)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="px-2 py-1 rounded bg-pink-500/15 hover:bg-pink-500/25 text-pink-300 border border-pink-500/30 text-[10px] font-semibold transition inline-flex items-center gap-1 cursor-pointer"
+                              title={`Sell ${h.symbol} for ETH on Uniswap`}
+                            >
+                              <span>Sell for ETH</span>
+                              <ExternalLink className="w-2.5 h-2.5 opacity-70" />
+                            </a>
+                          )}
+                          {h.asset && onMintAsset && (
+                            <button
+                              onClick={() => {
+                                onMintAsset(h.asset!, 'redeem');
+                                onClose();
+                              }}
+                              className="px-2 py-1 rounded bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/30 text-[10px] font-semibold transition"
+                              title="Redeem at live Oracle NAV"
+                            >
+                              Redeem
+                            </button>
+                          )}
+                        </div>
                       </div>
                     ))}
                     {userLpPools.map((p: LiquidityPool) => (
-                      <div key={p.poolAddress} className="flex justify-between items-center text-xs">
+                      <div key={p.poolAddress} className="flex justify-between items-center text-xs p-2 rounded-lg bg-white/[0.02] border border-white/[0.04]">
                         <div className="flex items-center gap-1.5">
                           <span className="font-bold text-pink-400 font-mono">{p.assetSymbol}/USDC LP</span>
                         </div>
@@ -241,18 +279,29 @@ export const WalletModal: React.FC<WalletModalProps> = ({ wallet, onClose, onNav
                 </div>
               )}
 
-              {/* View Full Portfolio & Allocation Link */}
+              {/* Navigation Shortcuts: Trade & Portfolio */}
               {onNavigate && (
-                <button
-                  onClick={() => {
-                    onNavigate('portfolio');
-                    onClose();
-                  }}
-                  className="w-full flex items-center justify-center gap-2 bg-white hover:bg-slate-200 text-black py-2.5 px-4 rounded-xl font-bold transition text-xs shadow-sm"
-                >
-                  <PieChart className="w-3.5 h-3.5 text-rh-green" />
-                  <span>View Full Capital Allocation</span>
-                </button>
+                <div className="grid grid-cols-2 gap-2 pt-1">
+                  <button
+                    onClick={() => {
+                      onNavigate('trade');
+                      onClose();
+                    }}
+                    className="flex items-center justify-center gap-1.5 bg-pink-500/15 hover:bg-pink-500/25 text-pink-300 border border-pink-500/30 py-2 px-3 rounded-xl font-bold transition text-xs"
+                  >
+                    <span>Trade / Swap 🦄</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      onNavigate('portfolio');
+                      onClose();
+                    }}
+                    className="flex items-center justify-center gap-1.5 bg-white hover:bg-slate-200 text-black py-2 px-3 rounded-xl font-bold transition text-xs shadow-sm"
+                  >
+                    <PieChart className="w-3.5 h-3.5 text-rh-green" />
+                    <span>Portfolio</span>
+                  </button>
+                </div>
               )}
 
               <button

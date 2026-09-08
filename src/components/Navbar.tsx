@@ -40,8 +40,9 @@ export const Navbar: React.FC<NavbarProps> = ({
   };
 
   const navItems: { view: AppView; label: string; href: string; badge?: string; pulse?: boolean }[] = [
+    { view: 'trade', label: 'Trade', href: '/trade', badge: 'Uniswap' },
     { view: 'markets', label: 'Markets (270+)', href: '/markets' },
-    { view: 'pools', label: 'Pools', href: '/pools', badge: 'Uniswap' },
+    { view: 'pools', label: 'Pools', href: '/pools' },
     { view: 'portfolio', label: 'Portfolio', href: '/portfolio' },
     { view: 'terminal', label: 'Oracle Feed', href: '/terminal', pulse: true },
     { view: 'bridge', label: 'Hyperlane', href: '/bridge' },
@@ -128,6 +129,14 @@ export const Navbar: React.FC<NavbarProps> = ({
               <PieChart className="w-3 h-3" />
               <span className="font-bold">Portfolio</span>
             </button>
+          )}
+
+          {/* User ETH Balance */}
+          {wallet.isConnected && (
+            <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/[0.04] border border-white/[0.08] text-xs font-mono text-slate-300">
+              <span className="text-cyan-400 font-bold">Ξ</span>
+              <span>{Number(wallet.balanceEth || 0).toFixed(3)} ETH</span>
+            </div>
           )}
 
           {/* Wallet Button */}

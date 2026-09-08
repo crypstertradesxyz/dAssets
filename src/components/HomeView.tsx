@@ -13,8 +13,9 @@ import {
 } from 'lucide-react';
 import { CopyButton } from './CopyButton';
 import deployedConfig from '../contracts/deployedAddresses.json';
-import { LeveragedAsset } from '../types';
+import { LeveragedAsset, AppView } from '../types';
 import { TokenLogo } from './TokenLogo';
+import { getUniswapSwapUrl } from '../utils/uniswap';
 
 interface HomeViewProps {
   assets: LeveragedAsset[];
@@ -22,6 +23,7 @@ interface HomeViewProps {
   onSelectAsset: (asset: LeveragedAsset) => void;
   onMintAsset: (asset: LeveragedAsset) => void;
   onOpenContracts: () => void;
+  onNavigate?: (view: AppView, asset?: LeveragedAsset) => void;
 }
 
 export const HomeView: React.FC<HomeViewProps> = ({ 
@@ -30,6 +32,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
   onSelectAsset, 
   onMintAsset,
   onOpenContracts,
+  onNavigate,
 }) => {
   const factoryAddress = deployedConfig?.factory || '0x31390C104d777c03B00E95967E3F2905993f947b';
 
@@ -137,6 +140,23 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
             <div className="pt-2 flex flex-wrap items-center gap-3">
               <motion.a
+                href="/trade"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={(e) => {
+                  if (!e.metaKey && !e.ctrlKey) {
+                    e.preventDefault();
+                    if (onNavigate) onNavigate('trade');
+                  }
+                }}
+                className="flex items-center gap-2 bg-pink-500 hover:bg-pink-400 text-white font-bold text-xs px-5 py-3 rounded-lg transition shadow-lg cursor-pointer"
+              >
+                <img src="/logos/uni.png" alt="Uniswap" className="w-4 h-4 rounded-full" />
+                <span>Trade / Swap</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </motion.a>
+
+              <motion.a
                 href="/markets"
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
@@ -149,7 +169,6 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 className="flex items-center gap-2 bg-white hover:bg-slate-100 text-black font-semibold text-xs px-5 py-3 rounded-lg transition shadow-sm cursor-pointer"
               >
                 <span>Browse 270+ Markets</span>
-                <ArrowRight className="w-3.5 h-3.5" />
               </motion.a>
 
               <motion.button
@@ -159,7 +178,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 className="flex items-center gap-2 bg-[#0E1218] hover:bg-[#141A22] text-slate-200 border border-white/[0.12] text-xs font-medium px-4 py-3 rounded-lg transition"
               >
                 <Zap className="w-3.5 h-3.5 text-rh-green fill-current" />
-                <span>Mint {activeAsset.symbol}</span>
+                <span>Mint Vault</span>
               </motion.button>
 
               <a
@@ -175,6 +194,39 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 <FileCode className="w-3.5 h-3.5 text-slate-400" />
                 <span>Verified Contracts</span>
               </a>
+            </div>
+
+            {/* 3-Step Quick Start Explainer */}
+            <div className="pt-2 grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
+              <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-3 space-y-1">
+                <div className="text-pink-400 font-mono font-bold flex items-center gap-1.5 text-[11px]">
+                  <span className="w-1.5 h-1.5 rounded-full bg-pink-400"></span>
+                  <span>1. Swap with ETH</span>
+                </div>
+                <p className="text-[11px] text-slate-400 leading-snug">
+                  Buy any 2x, 3x, 5x token with native Robinhood ETH on Uniswap.
+                </p>
+              </div>
+
+              <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-3 space-y-1">
+                <div className="text-rh-green font-mono font-bold flex items-center gap-1.5 text-[11px]">
+                  <span className="w-1.5 h-1.5 rounded-full bg-rh-green"></span>
+                  <span>2. Hold Leverage</span>
+                </div>
+                <p className="text-[11px] text-slate-400 leading-snug">
+                  No margin debt, no borrowing fees, and zero liquidation risk.
+                </p>
+              </div>
+
+              <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-3 space-y-1">
+                <div className="text-cyan-400 font-mono font-bold flex items-center gap-1.5 text-[11px]">
+                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
+                  <span>3. Convert Back</span>
+                </div>
+                <p className="text-[11px] text-slate-400 leading-snug">
+                  Sell back for regular ETH on Uniswap or Redeem at Oracle NAV anytime.
+                </p>
+              </div>
             </div>
 
             {/* Quick Metrics Bar */}
@@ -301,16 +353,30 @@ export const HomeView: React.FC<HomeViewProps> = ({
               </div>
 
 
-              {/* Action Button */}
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => onMintAsset(activeAsset)}
-                className="w-full flex items-center justify-center gap-2 bg-white hover:bg-slate-100 text-black font-semibold py-3 px-4 rounded-lg text-xs transition shadow-sm"
-              >
-                <Zap className="w-3.5 h-3.5 fill-current" />
-                <span>Mint {activeAsset.symbol} on Robinhood Chain</span>
-              </motion.button>
+              {/* Action Buttons */}
+              <div className="flex items-center gap-2 pt-1 font-sans">
+                <a
+                  href={getUniswapSwapUrl(activeAsset.tokenAddress)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 flex items-center justify-center gap-2 bg-pink-500 hover:bg-pink-400 text-white font-bold py-3 px-3 rounded-xl text-xs transition shadow-md cursor-pointer"
+                  title="Trade on Uniswap (Robinhood Chain)"
+                >
+                  <img src="/logos/uni.png" alt="Uniswap" className="w-4 h-4 rounded-full" />
+                  <span>Trade Uniswap</span>
+                  <ExternalLink className="w-3 h-3 opacity-80" />
+                </a>
+
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => onMintAsset(activeAsset)}
+                  className="flex-1 flex items-center justify-center gap-2 bg-white hover:bg-slate-200 text-black font-bold py-3 px-3 rounded-xl text-xs transition shadow-sm"
+                >
+                  <Zap className="w-3.5 h-3.5 fill-current" />
+                  <span>Mint Vault</span>
+                </motion.button>
+              </div>
 
             </div>
           </motion.div>
