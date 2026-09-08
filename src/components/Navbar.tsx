@@ -109,7 +109,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           {wallet.isConnected && wallet.chainId !== 4663 ? (
             <button
               onClick={() => Web3Service.getInstance().switchNetwork()}
-              className="hidden md:flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-xs text-amber-300 font-mono hover:bg-amber-500/20 transition cursor-pointer"
+              className="flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-xs text-amber-300 font-mono hover:bg-amber-500/20 transition cursor-pointer active:scale-95 shadow-sm"
               title="Click to switch to Robinhood Chain Mainnet (4663)"
             >
               <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>

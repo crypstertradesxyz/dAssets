@@ -8,7 +8,9 @@ import {
   Search, 
   ExternalLink,
   ChevronDown,
-  Layers
+  Layers,
+  RefreshCw,
+  AlertCircle
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { ethers } from 'ethers';
@@ -17,6 +19,7 @@ import deployedConfig from '../contracts/deployedAddresses.json';
 import { LeveragedAsset, WalletState, LiquidityPool } from '../types';
 import { BridgeService } from '../services/bridge';
 import { OracleService } from '../services/oracle';
+import { Web3Service } from '../services/web3';
 import { CopyButton } from './CopyButton';
 import { TokenLogo } from './TokenLogo';
 
@@ -47,7 +50,10 @@ export const CreatePoolModal: React.FC<CreatePoolModalProps> = ({
   const [isAssetPickerOpen, setIsAssetPickerOpen] = useState(false);
   const [isDeploying, setIsDeploying] = useState(false);
   const [createdPool, setCreatedPool] = useState<LiquidityPool | null>(null);
+  const [deployError, setDeployError] = useState<string | null>(null);
+  const [isSwitchingChain, setIsSwitchingChain] = useState(false);
 
+  const isWrongNetwork = wallet.isConnected && wallet.chainId !== 4663;
   const amountNumber = parseFloat(assetAmount) || 0;
   const usdcRequired = Number((amountNumber * selectedAsset.currentNav).toFixed(2));
   const estimatedApr = feeTier === '0.05%' ? 18.2 : feeTier === '0.30%' ? 32.4 : 44.8;
@@ -58,55 +64,55 @@ export const CreatePoolModal: React.FC<CreatePoolModalProps> = ({
          a.underlying.toLowerCase().includes(searchQuery.toLowerCase())
   ).slice(0, 12);
 
+  const handleSwitchNetwork = async () => {
+    setIsSwitchingChain(true);
+    setDeployError(null);
+    try {
+      const success = await Web3Service.getInstance().switchNetwork();
+      if (!success) {
+        setDeployError('Could not switch to Robinhood Chain automatically. Please approve the network switch request in your wallet extension.');
+      }
+    } catch (err: any) {
+      setDeployError(err.message || 'Failed to switch network.');
+    } finally {
+      setIsSwitchingChain(false);
+    }
+  };
+
   const handleDeployPool = async () => {
-    if (!wallet.isConnected || !(window as any).ethereum) {
+    setDeployError(null);
+    if (!wallet.isConnected) {
       onOpenWalletModal();
       return;
     }
 
+    if (isWrongNetwork) {
+      setIsSwitchingChain(true);
+      const switched = await Web3Service.getInstance().switchNetwork();
+      setIsSwitchingChain(false);
+      if (!switched) {
+        setDeployError('Please switch your wallet to Robinhood Chain Mainnet (Chain ID 4663) to proceed.');
+        return;
+      }
+    }
+
     if (!selectedAsset.tokenAddress) {
-      alert(`${selectedAsset.symbol} has not been deployed on Robinhood Chain yet. Please deploy/mint it first via the Markets tab before registering a liquidity pool.`);
+      setDeployError(`${selectedAsset.symbol} has not been deployed on Robinhood Chain yet. Please deploy/mint it first via the Markets tab before registering a liquidity pool.`);
       return;
     }
 
     setIsDeploying(true);
 
     try {
-      const eth = (window as any).ethereum;
+      const eth = Web3Service.getInstance().getActiveProvider();
+      if (!eth) throw new Error('NO_WALLET');
 
-      // 1. Ensure wallet is on Robinhood Chain Mainnet (Chain ID 4663 / 0x1237)
-      try {
-        const chainIdHex = await eth.request({ method: 'eth_chainId' });
-        if (parseInt(chainIdHex, 16) !== 4663) {
-          try {
-            await eth.request({
-              method: 'wallet_switchEthereumChain',
-              params: [{ chainId: '0x1237' }],
-            });
-          } catch (switchError: any) {
-            if (switchError.code === 4902) {
-              await eth.request({
-                method: 'wallet_addEthereumChain',
-                params: [{
-                  chainId: '0x1237',
-                  chainName: 'Robinhood Chain',
-                  nativeCurrency: {
-                    name: 'Ethereum',
-                    symbol: 'ETH',
-                    decimals: 18,
-                  },
-                  rpcUrls: ['https://rpc.mainnet.chain.robinhood.com'],
-                  blockExplorerUrls: ['https://robinhoodchain.blockscout.com'],
-                }],
-              });
-            } else {
-              throw switchError;
-            }
-          }
+      const chainIdHex = await eth.request({ method: 'eth_chainId' });
+      if (parseInt(chainIdHex, 16) !== 4663) {
+        const switched = await Web3Service.getInstance().switchNetwork(eth);
+        if (!switched) {
+          throw new Error('NETWORK_SWITCH_FAILED');
         }
-      } catch (networkErr: any) {
-        console.warn('Network switch to Robinhood Chain failed:', networkErr);
-        throw new Error('NETWORK_SWITCH_FAILED');
       }
 
       const provider = new ethers.BrowserProvider(eth);
@@ -171,15 +177,15 @@ export const CreatePoolModal: React.FC<CreatePoolModalProps> = ({
     } catch (err: any) {
       console.error('Failed to register pool on Robinhood Chain:', err);
       if (err.message === 'NO_L2_GAS') {
-        alert('Your wallet has 0.00 ETH on Robinhood Chain. A small amount of gas is required to register the pool on-chain.');
+        setDeployError('Your wallet has 0.00 ETH on Robinhood Chain. A small amount of gas is required to register the pool on-chain.');
       } else if (err.message === 'NETWORK_SWITCH_FAILED') {
-        alert('Please switch your wallet to Robinhood Chain Mainnet (Chain ID 4663).');
+        setDeployError('Please switch your wallet to Robinhood Chain Mainnet (Chain ID 4663).');
       } else if (err.code === 4001 || err.message?.includes('rejected')) {
-        alert('Transaction was cancelled in your wallet.');
+        setDeployError('Transaction was cancelled in your wallet.');
       } else if (err.message?.includes('insufficient funds')) {
-        alert('Your wallet does not have enough ETH on Robinhood Chain to pay for transaction gas.');
+        setDeployError('Your wallet does not have enough ETH on Robinhood Chain to pay for transaction gas.');
       } else {
-        alert(`Failed to register pool: ${err.reason || err.message || 'Unknown error'}`);
+        setDeployError(`Failed to register pool: ${err.reason || err.message || 'Unknown error'}`);
       }
     } finally {
       setIsDeploying(false);
@@ -480,28 +486,97 @@ export const CreatePoolModal: React.FC<CreatePoolModalProps> = ({
                   </div>
                 </div>
 
+                {/* Error Banner */}
+                {deployError && (
+                  <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-xs text-red-300 space-y-1.5 flex items-start gap-2.5">
+                    <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <div className="font-semibold text-red-200">Deployment Notice</div>
+                      <div className="text-[11px] text-red-300/90 leading-relaxed">{deployError}</div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Network Warning if on wrong chain */}
+                {isWrongNetwork && (
+                  <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-200 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 font-bold text-amber-300">
+                        <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
+                        <span>Robinhood Chain (4663) Required</span>
+                      </div>
+                      <span className="text-[10px] font-mono text-amber-400/80 bg-amber-500/20 px-2 py-0.5 rounded">
+                        {wallet.networkName}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-amber-200/80 font-sans leading-relaxed">
+                      Your wallet is connected to <strong>{wallet.networkName}</strong>. Robinhood Chain Mainnet (Chain ID 4663) is required to deploy Uniswap pools.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleSwitchNetwork}
+                      disabled={isSwitchingChain}
+                      className="w-full flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-400 text-black font-bold py-2.5 px-3 rounded-lg text-xs transition active:scale-98 shadow-sm"
+                    >
+                      {isSwitchingChain ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+                      <span>Switch to Robinhood Chain (4663)</span>
+                    </button>
+                  </div>
+                )}
+
                 {/* Action Button */}
-                <motion.button
-                  whileHover={{ scale: 1.01 }}
-                  whileTap={{ scale: 0.99 }}
-                  onClick={handleDeployPool}
-                  disabled={isDeploying || amountNumber <= 0}
-                  className="w-full flex items-center justify-center gap-2 bg-white hover:bg-slate-200 disabled:bg-white/[0.06] disabled:text-slate-600 text-black font-semibold py-3 px-4 rounded-md text-xs transition shadow-sm"
-                >
-                  {isDeploying ? (
-                    <>
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      <span>Broadcasting Uniswap Pool Deployment...</span>
-                    </>
-                  ) : !wallet.isConnected ? (
+                {!wallet.isConnected ? (
+                  <motion.button
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.99 }}
+                    onClick={onOpenWalletModal}
+                    type="button"
+                    className="w-full flex items-center justify-center gap-2 bg-white hover:bg-slate-200 text-black font-semibold py-3 px-4 rounded-md text-xs transition shadow-sm"
+                  >
                     <span>Connect Wallet to Deploy Pool</span>
-                  ) : (
-                    <>
-                      <Layers className="w-3.5 h-3.5" />
-                      <span>Create & Seed {selectedAsset.symbol}/{pairedSymbol} Pool</span>
-                    </>
-                  )}
-                </motion.button>
+                  </motion.button>
+                ) : isWrongNetwork ? (
+                  <motion.button
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.99 }}
+                    onClick={handleSwitchNetwork}
+                    disabled={isSwitchingChain}
+                    type="button"
+                    className="w-full flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-400 text-black font-bold py-3 px-4 rounded-md text-xs transition shadow-sm"
+                  >
+                    {isSwitchingChain ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>Switching to Robinhood Chain...</span>
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="w-3.5 h-3.5" />
+                        <span>Switch to Robinhood Chain (4663)</span>
+                      </>
+                    )}
+                  </motion.button>
+                ) : (
+                  <motion.button
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.99 }}
+                    onClick={handleDeployPool}
+                    disabled={isDeploying || amountNumber <= 0}
+                    className="w-full flex items-center justify-center gap-2 bg-white hover:bg-slate-200 disabled:bg-white/[0.06] disabled:text-slate-600 text-black font-semibold py-3 px-4 rounded-md text-xs transition shadow-sm"
+                  >
+                    {isDeploying ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>Broadcasting Uniswap Pool Deployment...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Layers className="w-3.5 h-3.5" />
+                        <span>Create & Seed {selectedAsset.symbol}/{pairedSymbol} Pool</span>
+                      </>
+                    )}
+                  </motion.button>
+                )}
               </motion.div>
             )}
           </AnimatePresence>

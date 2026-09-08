@@ -1,6 +1,7 @@
 import { ethers } from 'ethers';
 import artifacts from '../contracts/artifacts.json';
 import deployedConfig from '../contracts/deployedAddresses.json';
+import { Web3Service } from './web3';
 
 export async function mintGenuineOnChain(
   symbol: string,
@@ -11,51 +12,19 @@ export async function mintGenuineOnChain(
   hyperevmAddress: string,
   amount: number
 ): Promise<{ txHash: string; tokenAddress?: string }> {
-  const eth = (window as any).ethereum;
+  const web3 = Web3Service.getInstance();
+  const eth = web3.getActiveProvider();
   if (!eth) {
-    throw new Error('No Web3 wallet injected (MetaMask/Rabby/Robinhood Wallet required).');
+    throw new Error('NO_WALLET');
   }
 
   // 1. Ensure wallet is switched to Robinhood Chain Mainnet (Chain ID: 4663 / 0x1237)
   try {
     const chainIdHex = await eth.request({ method: 'eth_chainId' });
     if (parseInt(chainIdHex, 16) !== 4663) {
-      try {
-        await eth.request({
-          method: 'wallet_switchEthereumChain',
-          params: [{ chainId: '0x1237' }],
-        });
-      } catch (switchError: any) {
-        const isMissing =
-          switchError?.code === 4902 ||
-          switchError?.code === -32603 ||
-          switchError?.data?.originalError?.code === 4902 ||
-          switchError?.data?.code === 4902 ||
-          (switchError?.message && (
-            switchError.message.includes('Unrecognized') ||
-            switchError.message.includes('4902') ||
-            switchError.message.includes('not added') ||
-            switchError.message.includes('unknown')
-          ));
-
-        if (isMissing) {
-          await eth.request({
-            method: 'wallet_addEthereumChain',
-            params: [{
-              chainId: '0x1237',
-              chainName: 'Robinhood Chain',
-              nativeCurrency: {
-                name: 'Ethereum',
-                symbol: 'ETH',
-                decimals: 18,
-              },
-              rpcUrls: ['https://rpc.mainnet.chain.robinhood.com'],
-              blockExplorerUrls: ['https://robinhoodchain.blockscout.com'],
-            }],
-          });
-        } else {
-          throw switchError;
-        }
+      const switched = await web3.switchNetwork(eth);
+      if (!switched) {
+        throw new Error('NETWORK_SWITCH_FAILED');
       }
     }
   } catch (err: any) {
@@ -174,7 +143,7 @@ export async function addTokenToWallet(
   symbol: string,
   decimals: number = 18
 ): Promise<boolean> {
-  const eth = (window as any).ethereum;
+  const eth = Web3Service.getInstance().getActiveProvider();
   if (!eth) return false;
   try {
     return await eth.request({

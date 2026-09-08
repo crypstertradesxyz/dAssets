@@ -114,6 +114,26 @@ export const App: React.FC = () => {
           setActiveView={(v) => navigateTo(v)}
         />
 
+        {/* Global Network Switch Alert Bar */}
+        {wallet.isConnected && wallet.chainId !== 4663 && (
+          <div className="bg-gradient-to-r from-amber-500/20 via-amber-500/15 to-amber-500/20 border-b border-amber-500/30 px-4 py-2 text-xs font-mono">
+            <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
+              <div className="flex items-center gap-2 text-amber-200">
+                <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse shrink-0"></span>
+                <span>
+                  Connected to <strong className="text-white">{wallet.networkName}</strong>. Please switch to <strong className="text-white">Robinhood Chain (Chain ID 4663)</strong> to mint and trade.
+                </span>
+              </div>
+              <button
+                onClick={() => Web3Service.getInstance().switchNetwork()}
+                className="px-3 py-1 bg-amber-500 hover:bg-amber-400 text-black font-bold rounded-md transition text-xs flex items-center gap-1.5 shadow-sm active:scale-95 shrink-0"
+              >
+                <span>Switch to Robinhood Chain</span>
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* View Routing */}
         {activeView === 'home' && (
           <main>

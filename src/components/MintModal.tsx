@@ -10,7 +10,9 @@ import {
   Clock, 
   Plus, 
   ArrowDownLeft,
-  Coins
+  Coins,
+  RefreshCw,
+  AlertCircle
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { ethers } from 'ethers';
@@ -43,7 +45,10 @@ export const MintModal: React.FC<MintModalProps> = ({
   const [currentStep, setCurrentStep] = useState<'idle' | 'locking' | 'attesting' | 'completed'>('idle');
   const [completedTx, setCompletedTx] = useState<BridgeTransaction | null>(null);
   const [activeTokenAddress, setActiveTokenAddress] = useState<string>(asset.tokenAddress || '');
+  const [txError, setTxError] = useState<string | null>(null);
+  const [isSwitchingChain, setIsSwitchingChain] = useState(false);
 
+  const isWrongNetwork = wallet.isConnected && wallet.chainId !== 4663;
   const userHolding = wallet.holdings?.[asset.symbol] || 0;
   const amountNumber = parseFloat(amountInput) || 0;
   const bridgeFee = 0.05; // $0.05 Robinhood L2 gas fee
@@ -56,14 +61,40 @@ export const MintModal: React.FC<MintModalProps> = ({
   const grossProceeds = Number((amountNumber * asset.currentNav).toFixed(2));
   const netProceeds = Math.max(0, Number((grossProceeds - bridgeFee).toFixed(2)));
 
+  const handleSwitchNetwork = async () => {
+    setIsSwitchingChain(true);
+    setTxError(null);
+    try {
+      const success = await Web3Service.getInstance().switchNetwork();
+      if (!success) {
+        setTxError('Could not switch to Robinhood Chain automatically. Please approve the network switch request in your wallet extension.');
+      }
+    } catch (err: any) {
+      setTxError(err.message || 'Failed to switch network.');
+    } finally {
+      setIsSwitchingChain(false);
+    }
+  };
+
   const handleExecute = async () => {
-    if (!wallet.isConnected || !(window as any).ethereum) {
+    setTxError(null);
+    if (!wallet.isConnected) {
       onOpenWalletModal();
       return;
     }
 
+    if (isWrongNetwork) {
+      setIsSwitchingChain(true);
+      const switched = await Web3Service.getInstance().switchNetwork();
+      setIsSwitchingChain(false);
+      if (!switched) {
+        setTxError('Please switch your wallet to Robinhood Chain Mainnet (Chain ID 4663) to proceed.');
+        return;
+      }
+    }
+
     if (activeTab === 'redeem' && amountNumber > userHolding) {
-      alert(`Insufficient balance. You hold ${userHolding} ${asset.symbol}.`);
+      setTxError(`Insufficient balance. You hold ${userHolding} ${asset.symbol}.`);
       return;
     }
 
@@ -117,7 +148,7 @@ export const MintModal: React.FC<MintModalProps> = ({
       } else {
         // GENUINE REDEEM: Burn token on Robinhood Chain
         setCurrentStep('attesting');
-        const eth = (window as any).ethereum;
+        const eth = Web3Service.getInstance().getActiveProvider();
         if (!eth) throw new Error('NO_WALLET');
 
         const provider = new ethers.BrowserProvider(eth);
@@ -165,13 +196,13 @@ export const MintModal: React.FC<MintModalProps> = ({
       console.error('On-chain transaction failed:', err);
       setCurrentStep('idle');
       if (err.message === 'NO_L2_GAS') {
-        alert('Your wallet has 0.00 ETH on Robinhood Chain. You need a small amount of Robinhood Chain ETH to pay for transaction gas.');
+        setTxError('Your wallet has 0.00 ETH on Robinhood Chain. You need a small amount of Robinhood Chain ETH to pay for transaction gas.');
       } else if (err.code === 4001 || err.message?.includes('rejected')) {
-        alert('Transaction was cancelled in your wallet.');
+        setTxError('Transaction was cancelled in your wallet.');
       } else if (err.message === 'NETWORK_SWITCH_FAILED') {
-        alert('Please switch your wallet network to Robinhood Chain Mainnet (Chain ID 4663).');
+        setTxError('Please switch your wallet network to Robinhood Chain Mainnet (Chain ID 4663).');
       } else {
-        alert(`Transaction failed: ${err.reason || err.message || 'Unknown error'}`);
+        setTxError(`Transaction failed: ${err.reason || err.message || 'Unknown error'}`);
       }
     } finally {
       setIsProcessing(false);
@@ -489,6 +520,44 @@ export const MintModal: React.FC<MintModalProps> = ({
                   </motion.div>
                 )}
 
+                {/* Error Banner */}
+                {txError && (
+                  <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-xs text-red-300 space-y-1.5 flex items-start gap-2.5">
+                    <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <div className="font-semibold text-red-200">Transaction Notice</div>
+                      <div className="text-[11px] text-red-300/90 leading-relaxed">{txError}</div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Network Warning if on wrong chain */}
+                {isWrongNetwork && (
+                  <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-200 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 font-bold text-amber-300">
+                        <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
+                        <span>Robinhood Chain (4663) Required</span>
+                      </div>
+                      <span className="text-[10px] font-mono text-amber-400/80 bg-amber-500/20 px-2 py-0.5 rounded">
+                        {wallet.networkName}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-amber-200/80 font-sans leading-relaxed">
+                      Your wallet is connected to <strong>{wallet.networkName}</strong>. Robinhood Chain Mainnet (Chain ID 4663) is required to execute on-chain mints and burns.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleSwitchNetwork}
+                      disabled={isSwitchingChain}
+                      className="w-full flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-400 text-black font-bold py-2.5 px-3 rounded-lg text-xs transition active:scale-98 shadow-sm"
+                    >
+                      {isSwitchingChain ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+                      <span>Switch to Robinhood Chain (4663)</span>
+                    </button>
+                  </div>
+                )}
+
                 {/* Warning if user has no tokens to redeem */}
                 {activeTab === 'redeem' && userHolding <= 0 && (
                   <div className="p-3 rounded-md bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs flex items-center gap-2">
@@ -497,40 +566,71 @@ export const MintModal: React.FC<MintModalProps> = ({
                 )}
 
                 {/* Action Button */}
-                <motion.button
-                  whileHover={{ scale: 1.01 }}
-                  whileTap={{ scale: 0.99 }}
-                  onClick={handleExecute}
-                  disabled={
-                    isProcessing || 
-                    amountNumber <= 0 || 
-                    (activeTab === 'redeem' && (userHolding <= 0 || amountNumber > userHolding))
-                  }
-                  className="w-full flex items-center justify-center gap-2 bg-white hover:bg-slate-200 disabled:bg-white/[0.06] disabled:text-slate-600 text-black font-semibold py-3 px-4 rounded-md text-xs transition shadow-sm"
-                >
-                  {isProcessing ? (
-                    <>
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      <span>Processing Transaction...</span>
-                    </>
-                  ) : !wallet.isConnected ? (
+                {!wallet.isConnected ? (
+                  <motion.button
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.99 }}
+                    onClick={onOpenWalletModal}
+                    type="button"
+                    className="w-full flex items-center justify-center gap-2 bg-white hover:bg-slate-200 text-black font-semibold py-3 px-4 rounded-md text-xs transition shadow-sm"
+                  >
                     <span>Connect Wallet to Continue</span>
-                  ) : activeTab === 'mint' ? (
-                    <>
-                      <Zap className="w-3.5 h-3.5 fill-current text-black" />
-                      <span>Confirm Mint ({asset.symbol})</span>
-                    </>
-                  ) : userHolding <= 0 ? (
-                    <span>No {asset.symbol} to Redeem</span>
-                  ) : amountNumber > userHolding ? (
-                    <span>Amount Exceeds Position ({userHolding} Max)</span>
-                  ) : (
-                    <>
-                      <Coins className="w-3.5 h-3.5 text-black" />
-                      <span>Redeem for ${netProceeds.toFixed(2)} USDC</span>
-                    </>
-                  )}
-                </motion.button>
+                  </motion.button>
+                ) : isWrongNetwork ? (
+                  <motion.button
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.99 }}
+                    onClick={handleSwitchNetwork}
+                    disabled={isSwitchingChain}
+                    type="button"
+                    className="w-full flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-400 text-black font-bold py-3 px-4 rounded-md text-xs transition shadow-sm"
+                  >
+                    {isSwitchingChain ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>Switching to Robinhood Chain...</span>
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="w-3.5 h-3.5" />
+                        <span>Switch to Robinhood Chain (4663)</span>
+                      </>
+                    )}
+                  </motion.button>
+                ) : (
+                  <motion.button
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.99 }}
+                    onClick={handleExecute}
+                    disabled={
+                      isProcessing || 
+                      amountNumber <= 0 || 
+                      (activeTab === 'redeem' && (userHolding <= 0 || amountNumber > userHolding))
+                    }
+                    className="w-full flex items-center justify-center gap-2 bg-white hover:bg-slate-200 disabled:bg-white/[0.06] disabled:text-slate-600 text-black font-semibold py-3 px-4 rounded-md text-xs transition shadow-sm"
+                  >
+                    {isProcessing ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>Processing Transaction...</span>
+                      </>
+                    ) : activeTab === 'mint' ? (
+                      <>
+                        <Zap className="w-3.5 h-3.5 fill-current text-black" />
+                        <span>Confirm Mint ({asset.symbol})</span>
+                      </>
+                    ) : userHolding <= 0 ? (
+                      <span>No {asset.symbol} to Redeem</span>
+                    ) : amountNumber > userHolding ? (
+                      <span>Amount Exceeds Position ({userHolding} Max)</span>
+                    ) : (
+                      <>
+                        <Coins className="w-3.5 h-3.5 text-black" />
+                        <span>Redeem for ${netProceeds.toFixed(2)} USDC</span>
+                      </>
+                    )}
+                  </motion.button>
+                )}
 
                 <div className="text-[11px] text-slate-500 text-center font-sans">
                   {activeTab === 'mint' 

@@ -90,59 +90,80 @@ export class Web3Service {
   }
 
   /**
+   * Get currently active provider or fallback to detected provider
+   */
+  public getActiveProvider(): any {
+    if (this.activeProvider) return this.activeProvider;
+    const provider = this.getProvider();
+    if (provider) {
+      this.activeProvider = provider;
+    }
+    return provider;
+  }
+
+  /**
    * Resolve appropriate injected provider based on user selection
    */
   public getProvider(type?: 'robinhood' | 'metamask' | 'rabby' | 'injected'): any {
     const w = typeof window !== 'undefined' ? (window as any) : {};
 
-    // 1. Direct window-level wallet objects
-    if (type === 'robinhood') {
-      if (w.robinhood?.ethereum) return w.robinhood.ethereum;
-      if (w.robinhood) return w.robinhood;
-    }
-    if (type === 'rabby' && w.rabby) {
-      return w.rabby;
+    // 1. Check EIP-6963 discovered providers
+    const discovered = this.getDiscoveredWallets();
+    if (type && discovered.length > 0) {
+      const match = discovered.find(d => d.info.name.toLowerCase().includes(type.toLowerCase()));
+      if (match) return match.provider;
     }
 
-    // 2. Multi-injected array check (window.ethereum.providers)
-    if (w.ethereum?.providers && Array.isArray(w.ethereum.providers)) {
-      if (type === 'robinhood') {
+    // 2. Specific wallet checks
+    if (type === 'robinhood') {
+      if (w.robinhood?.ethereum) return w.robinhood.ethereum;
+      if (w.robinhood?.request) return w.robinhood;
+      if (w.ethereum?.isRobinhood) return w.ethereum;
+      if (w.ethereum?.providers && Array.isArray(w.ethereum.providers)) {
         const rh = w.ethereum.providers.find((p: any) => p.isRobinhood);
         if (rh) return rh;
       }
-      if (type === 'rabby') {
+      // Robinhood mobile browser or in-app web3 fallback
+      if (w.ethereum && !w.ethereum.isMetaMask && !w.ethereum.isRabby) {
+        return w.ethereum;
+      }
+    }
+
+    if (type === 'rabby') {
+      if (w.rabby) return w.rabby;
+      if (w.ethereum?.isRabby) return w.ethereum;
+      if (w.ethereum?.providers && Array.isArray(w.ethereum.providers)) {
         const rb = w.ethereum.providers.find((p: any) => p.isRabby);
         if (rb) return rb;
       }
-      if (type === 'metamask') {
+    }
+
+    if (type === 'metamask') {
+      if (w.ethereum?.providers && Array.isArray(w.ethereum.providers)) {
         const mm = w.ethereum.providers.find((p: any) => p.isMetaMask && !p.isRabby && !p.isPhantom && !p.isBraveWallet);
         if (mm) return mm;
       }
+      if (w.ethereum?.isMetaMask) return w.ethereum;
+    }
+
+    // 3. Multi-injected array check (window.ethereum.providers)
+    if (w.ethereum?.providers && Array.isArray(w.ethereum.providers) && w.ethereum.providers.length > 0) {
       return w.ethereum.providers[0];
     }
 
-    // 3. Fallback to standard window.ethereum
+    // 4. Standard window.ethereum fallback
     if (w.ethereum) {
       return w.ethereum;
     }
 
-    // 4. Any EIP-6963 provider
-    const discovered = this.getDiscoveredWallets();
+    // 5. Fallback to any discovered EIP-6963 provider
     if (discovered.length > 0) {
-      if (type === 'metamask') {
-        const mm = discovered.find(d => d.info.name.toLowerCase().includes('metamask'));
-        if (mm) return mm.provider;
-      }
-      if (type === 'robinhood') {
-        const rh = discovered.find(d => d.info.name.toLowerCase().includes('robinhood'));
-        if (rh) return rh.provider;
-      }
-      if (type === 'rabby') {
-        const rb = discovered.find(d => d.info.name.toLowerCase().includes('rabby'));
-        if (rb) return rb.provider;
-      }
       return discovered[0].provider;
     }
+
+    // 6. Direct window-level objects
+    if (w.robinhood?.ethereum || w.robinhood) return w.robinhood.ethereum || w.robinhood;
+    if (w.rabby) return w.rabby;
 
     return null;
   }
@@ -196,51 +217,77 @@ export class Web3Service {
    * Attempt to switch to or add Robinhood Chain Mainnet (4663)
    */
   public async switchNetwork(customProvider?: any): Promise<boolean> {
-    const provider = customProvider || this.activeProvider || this.getProvider();
-    if (!provider) return false;
+    const provider = customProvider || this.getActiveProvider();
+    if (!provider) {
+      console.warn('Cannot switch network: no Web3 provider found');
+      return false;
+    }
 
     try {
       await provider.request({
         method: 'wallet_switchEthereumChain',
         params: [{ chainId: ROBINHOOD_CHAIN.chainHex }],
       });
-      return true;
     } catch (switchError: any) {
-      // If chain not yet registered in wallet, add it
-      const isMissing =
-        switchError?.code === 4902 ||
-        switchError?.code === -32603 ||
-        switchError?.data?.originalError?.code === 4902 ||
-        switchError?.data?.code === 4902 ||
-        (switchError?.message && (
-          switchError.message.includes('Unrecognized') ||
-          switchError.message.includes('4902') ||
-          switchError.message.includes('not added') ||
-          switchError.message.includes('unknown')
-        ));
+      // User explicitly rejected the switch prompt
+      if (
+        switchError?.code === 4001 ||
+        switchError?.message?.toLowerCase().includes('reject') ||
+        switchError?.message?.toLowerCase().includes('user denied')
+      ) {
+        console.warn('User rejected switching network:', switchError);
+        return false;
+      }
 
-      if (isMissing) {
+      // If switch failed (chain not configured or unrecognized), attempt to add Robinhood Chain
+      try {
+        await provider.request({
+          method: 'wallet_addEthereumChain',
+          params: [{
+            chainId: ROBINHOOD_CHAIN.chainHex,
+            chainName: ROBINHOOD_CHAIN.name,
+            nativeCurrency: {
+              name: 'Ethereum',
+              symbol: 'ETH',
+              decimals: 18,
+            },
+            rpcUrls: [ROBINHOOD_CHAIN.rpcUrl],
+            blockExplorerUrls: [ROBINHOOD_CHAIN.blockExplorer],
+          }],
+        });
+
+        // Some wallets require an explicit switch after adding
         try {
           await provider.request({
-            method: 'wallet_addEthereumChain',
-            params: [{
-              chainId: ROBINHOOD_CHAIN.chainHex,
-              chainName: ROBINHOOD_CHAIN.name,
-              nativeCurrency: {
-                name: 'Ethereum',
-                symbol: 'ETH',
-                decimals: 18,
-              },
-              rpcUrls: [ROBINHOOD_CHAIN.rpcUrl],
-              blockExplorerUrls: [ROBINHOOD_CHAIN.blockExplorer],
-            }],
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: ROBINHOOD_CHAIN.chainHex }],
           });
-          return true;
-        } catch (addError) {
-          console.warn('Failed to add Robinhood Chain:', addError);
-          return false;
+        } catch (_) {
+          // Already on chain or wallet auto-switched
         }
+      } catch (addError: any) {
+        console.warn('Failed to add Robinhood Chain:', addError);
+        return false;
       }
+    }
+
+    // Explicitly verify resulting chainId and update state
+    try {
+      const chainIdHex = await provider.request({ method: 'eth_chainId' });
+      const currentChainId = parseInt(chainIdHex, 16);
+      this.state = {
+        ...this.state,
+        chainId: currentChainId,
+        networkName: currentChainId === ROBINHOOD_CHAIN.chainId ? ROBINHOOD_CHAIN.name : `Chain ${currentChainId}`,
+      };
+      if (this.state.address) {
+        await this.syncAccountState(provider, this.state.address);
+      } else {
+        this.notify();
+      }
+      return currentChainId === ROBINHOOD_CHAIN.chainId;
+    } catch (e) {
+      console.warn('Error verifying chainId after switch:', e);
       return false;
     }
   }
@@ -331,7 +378,11 @@ export class Web3Service {
       }
 
       // Attempt to ensure on Robinhood Chain Mainnet (Chain 4663)
-      await this.switchNetwork(provider);
+      try {
+        await this.switchNetwork(provider);
+      } catch (switchErr) {
+        console.debug('Network switch deferred during initial connect:', switchErr);
+      }
 
       // Sync account state
       await this.syncAccountState(provider, accounts[0]);

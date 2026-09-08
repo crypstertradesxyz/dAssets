@@ -49,8 +49,14 @@ export const WalletModal: React.FC<WalletModalProps> = ({ wallet, onClose }) => 
 
   const handleSwitchToRobinhood = async () => {
     setIsSwitchingChain(true);
+    setErrorMsg(null);
     try {
-      await web3.switchNetwork();
+      const switched = await web3.switchNetwork();
+      if (!switched) {
+        setErrorMsg('Could not switch to Robinhood Chain automatically. Please approve the network switch request in your wallet extension.');
+      }
+    } catch (e: any) {
+      setErrorMsg(e.message || 'Failed to switch network.');
     } finally {
       setIsSwitchingChain(false);
     }
@@ -62,7 +68,12 @@ export const WalletModal: React.FC<WalletModalProps> = ({ wallet, onClose }) => 
   };
 
   const isWrongNetwork = wallet.isConnected && wallet.chainId !== ROBINHOOD_CHAIN.chainId;
-  const hasInjected = typeof window !== 'undefined' && Boolean((window as any).ethereum || (window as any).robinhood || (window as any).rabby);
+  const hasInjected = typeof window !== 'undefined' && Boolean(
+    (window as any).ethereum || 
+    (window as any).robinhood || 
+    (window as any).rabby || 
+    web3.getDiscoveredWallets().length > 0
+  );
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-150">
@@ -110,22 +121,33 @@ export const WalletModal: React.FC<WalletModalProps> = ({ wallet, onClose }) => 
               
               {/* Network Warning if on wrong chain */}
               {isWrongNetwork && (
-                <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-200 space-y-2">
+                <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-200 space-y-2.5">
                   <div className="flex items-center gap-2 font-bold text-amber-300">
                     <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
                     <span>Wrong Network Detected</span>
                   </div>
-                  <p className="text-[11px] text-amber-200/80 font-sans">
-                    Your wallet is connected to {wallet.networkName}. Please switch to Robinhood Chain Mainnet (4663) to trade or mint.
+                  <p className="text-[11px] text-amber-200/80 font-sans leading-relaxed">
+                    Your wallet is connected to <strong>{wallet.networkName}</strong>. Robinhood Chain Mainnet (Chain ID 4663) is required to trade or mint.
                   </p>
                   <button
                     onClick={handleSwitchToRobinhood}
                     disabled={isSwitchingChain}
-                    className="w-full flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-400 text-black font-bold py-2 px-3 rounded-lg text-xs transition"
+                    className="w-full flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-400 text-black font-bold py-2.5 px-3 rounded-lg text-xs transition shadow-sm active:scale-98"
                   >
                     {isSwitchingChain ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
-                    <span>Switch to Robinhood Chain</span>
+                    <span>Switch to Robinhood Chain (4663)</span>
                   </button>
+
+                  <details className="text-[10px] text-slate-400 font-sans cursor-pointer pt-1 border-t border-amber-500/20">
+                    <summary className="hover:text-amber-300 transition">Manual RPC Settings</summary>
+                    <div className="mt-2 p-2 rounded bg-black/50 border border-white/[0.08] font-mono space-y-1 text-slate-300 text-[10px]">
+                      <div><strong>Network Name:</strong> Robinhood Chain</div>
+                      <div><strong>RPC URL:</strong> https://rpc.mainnet.chain.robinhood.com</div>
+                      <div><strong>Chain ID:</strong> 4663</div>
+                      <div><strong>Currency Symbol:</strong> ETH</div>
+                      <div><strong>Block Explorer:</strong> https://robinhoodchain.blockscout.com</div>
+                    </div>
+                  </details>
                 </div>
               )}
 
@@ -259,6 +281,11 @@ export const WalletModal: React.FC<WalletModalProps> = ({ wallet, onClose }) => 
                   <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-white transition" />
                 )}
               </button>
+
+              {/* Helpful network prompt guide */}
+              <div className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.06] text-[11px] text-slate-400 leading-relaxed font-sans">
+                <span className="text-slate-200 font-semibold">Robinhood Chain Mainnet (Chain 4663)</span>: Compatible with all EVM wallets. When connecting, your wallet will prompt you to add or switch to the Robinhood network in 1 click.
+              </div>
 
               {/* In case user is on mobile or doesn't have an extension */}
               {!hasInjected && (
