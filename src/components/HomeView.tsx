@@ -1,287 +1,382 @@
 import React from 'react';
 import { 
   ArrowRight, 
-  ShieldCheck, 
   ExternalLink, 
-  Layers, 
   Zap, 
-  Coins 
+  ShieldCheck, 
+  Layers, 
+  TrendingUp, 
+  TrendingDown
 } from 'lucide-react';
 import { CopyButton } from './CopyButton';
 import deployedConfig from '../contracts/deployedAddresses.json';
+import { LeveragedAsset } from '../types';
 
 interface HomeViewProps {
+  assets: LeveragedAsset[];
   onExploreMarkets: () => void;
-  onOpenMintdBTC3L: () => void;
+  onSelectAsset: (asset: LeveragedAsset) => void;
+  onMintAsset: (asset: LeveragedAsset) => void;
 }
 
 export const HomeView: React.FC<HomeViewProps> = ({ 
+  assets,
   onExploreMarkets, 
-  onOpenMintdBTC3L 
+  onSelectAsset,
+  onMintAsset,
 }) => {
   const factoryAddress = deployedConfig?.factory || '0x31390C104d777c03B00E95967E3F2905993f947b';
   const flagshipAddress = deployedConfig?.flagshipToken?.address || '0x5164E1dc1Be45a0Fbe4D6A25A4713225E9bb56F6';
   const oracleAddress = deployedConfig?.oracle || '0x0c19e8DE99BA135aBdc059b34e0d3F9E5e021fd0';
   const mailboxAddress = deployedConfig?.hyperlaneMailbox || '0x3a867fCfFeC2B790970eeBDC9023E75B0a172aa7';
 
+  // Highlighted market pairs
+  const featuredSymbols = ['dBTC3L', 'dETH3L', 'dSOL5L', 'dHYPE3L'];
+  const featuredAssets = featuredSymbols
+    .map(sym => assets.find(a => a.symbol === sym))
+    .filter((a): a is LeveragedAsset => Boolean(a));
+
+  const flagshipAsset = assets.find(a => a.symbol === 'dBTC3L') || assets[0];
+
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24 space-y-24">
+    <div className="relative min-h-screen text-slate-100">
       
-      {/* Hero Section */}
-      <section className="text-center space-y-8 max-w-3xl mx-auto">
-        
-        {/* Status Pill */}
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-900/80 border border-zinc-800 text-xs text-zinc-400">
-          <span className="w-2 h-2 rounded-full bg-rh-green animate-pulse"></span>
-          <span className="text-zinc-200 font-medium">Robinhood Chain Mainnet</span>
-          <span className="text-zinc-600">•</span>
-          <span>Chain ID 4663</span>
+      {/* Network Status Sub-header */}
+      <div className="border-b border-white/[0.06] bg-[#090C10]/60 backdrop-blur px-4 sm:px-8 py-2 text-xs font-mono text-slate-400 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2">
+            <span className="w-2 h-2 rounded-full bg-rh-green"></span>
+            <span className="text-slate-200 font-medium">Robinhood Chain Mainnet</span>
+            <span className="text-slate-500">[Chain ID: 4663]</span>
+          </div>
+          <span className="text-slate-700 hidden sm:inline">•</span>
+          <span className="text-slate-400 hidden sm:inline">Hyperlane Warp Routes Active</span>
         </div>
 
-        {/* Headline */}
-        <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight text-white leading-tight">
-          Leveraged liquidity, <br />
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-zinc-100 via-zinc-300 to-zinc-500">
-            native to Robinhood Chain.
-          </span>
-        </h1>
-
-        {/* Smart Brief Description */}
-        <p className="text-base sm:text-lg text-zinc-400 leading-relaxed font-normal max-w-2xl mx-auto">
-          dAssets enables permissionless minting and AMM liquidity for tokenized leveraged positions backed by Bounce.tech on HyperEVM. Bridged natively through Hyperlane with zero direct liquidation risk.
-        </p>
-
-        {/* Action Buttons */}
-        <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3.5">
-          <button
-            onClick={onExploreMarkets}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-white hover:bg-zinc-200 text-black font-semibold px-6 py-3 rounded-xl transition text-sm shadow-sm"
-          >
-            <span>Explore 270+ Markets</span>
-            <ArrowRight className="w-4 h-4" />
-          </button>
-
-          <button
-            onClick={onOpenMintdBTC3L}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-200 border border-zinc-800 font-medium px-5 py-3 rounded-xl transition text-sm"
-          >
-            <Zap className="w-4 h-4 text-rh-green fill-current" />
-            <span>Mint Flagship (dBTC3L)</span>
-          </button>
-        </div>
-
-        {/* Clean Metrics Row */}
-        <div className="pt-10 grid grid-cols-3 gap-6 max-w-xl mx-auto border-t border-zinc-900 text-left">
-          <div>
-            <div className="text-2xl font-semibold font-mono text-white tracking-tight">270+</div>
-            <div className="text-xs text-zinc-400 mt-0.5">Bounce.tech Pairs</div>
-          </div>
-          <div>
-            <div className="text-2xl font-semibold font-mono text-white tracking-tight">100%</div>
-            <div className="text-xs text-zinc-400 mt-0.5">Perpetual Backing</div>
-          </div>
-          <div>
-            <div className="text-2xl font-semibold font-mono text-white tracking-tight">~100ms</div>
-            <div className="text-xs text-zinc-400 mt-0.5">Robinhood Block Time</div>
-          </div>
-        </div>
-
-      </section>
-
-      {/* How it Works: 3 Simple Steps */}
-      <section className="space-y-8">
-        <div className="text-center max-w-xl mx-auto">
-          <h2 className="text-xs font-mono uppercase tracking-widest text-zinc-500">How It Works</h2>
-          <p className="text-2xl font-bold text-white mt-1">Simple leverage without the stress.</p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-zinc-950 border border-zinc-850 rounded-2xl p-6 space-y-3">
-            <div className="text-xs font-mono text-zinc-500 font-bold">01</div>
-            <h3 className="font-semibold text-base text-white">Pick Your Market</h3>
-            <p className="text-xs text-zinc-400 leading-relaxed">
-              Choose from 270+ pairs (like 3x Long Bitcoin or 2x Short Solana). Pick whether you want 2x, 3x, or 5x exposure.
-            </p>
-          </div>
-
-          <div className="bg-zinc-950 border border-zinc-850 rounded-2xl p-6 space-y-3">
-            <div className="text-xs font-mono text-zinc-500 font-bold">02</div>
-            <h3 className="font-semibold text-base text-white">Mint in One Click</h3>
-            <p className="text-xs text-zinc-400 leading-relaxed">
-              Confirm the transaction from your wallet. The real token drops straight into your address on Robinhood Chain.
-            </p>
-          </div>
-
-          <div className="bg-zinc-950 border border-zinc-850 rounded-2xl p-6 space-y-3">
-            <div className="text-xs font-mono text-zinc-500 font-bold">03</div>
-            <h3 className="font-semibold text-base text-white">Trade or Earn Fees</h3>
-            <p className="text-xs text-zinc-400 leading-relaxed">
-              Hold the token in your wallet for leveraged upside, or seed an AMM pool to earn swap fees from other traders.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Why dAssets is Different */}
-      <section className="space-y-8">
-        <div className="text-center max-w-xl mx-auto">
-          <h2 className="text-xs font-mono uppercase tracking-widest text-zinc-500">Why It Matters</h2>
-          <p className="text-2xl font-bold text-white mt-1">Built to protect your capital.</p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          
-          <div className="bg-zinc-950 border border-zinc-850 rounded-2xl p-6 space-y-3">
-            <div className="w-9 h-9 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-200">
-              <ShieldCheck className="w-5 h-5 text-rh-green" />
-            </div>
-            <h3 className="font-semibold text-base text-white">Never Get Liquidated</h3>
-            <p className="text-xs text-zinc-400 leading-relaxed">
-              Standard margin trading wipes you out when the market drops. dAssets automatically rebalances behind the scenes, so you hold an actual token rather than an open debt position.
-            </p>
-          </div>
-
-          <div className="bg-zinc-950 border border-zinc-850 rounded-2xl p-6 space-y-3">
-            <div className="w-9 h-9 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-200">
-              <Layers className="w-5 h-5 text-blue-400" />
-            </div>
-            <h3 className="font-semibold text-base text-white">Hyperlane Cross-Chain Speed</h3>
-            <p className="text-xs text-zinc-400 leading-relaxed">
-              Powered by official Hyperlane contracts, connecting deep perpetual backing directly to Robinhood Chain in under 2 seconds.
-            </p>
-          </div>
-
-          <div className="bg-zinc-950 border border-zinc-850 rounded-2xl p-6 space-y-3">
-            <div className="w-9 h-9 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-200">
-              <Coins className="w-5 h-5 text-amber-400" />
-            </div>
-            <h3 className="font-semibold text-base text-white">100% Real ERC-20 Tokens</h3>
-            <p className="text-xs text-zinc-400 leading-relaxed">
-              Every asset is a standard ERC-20 token you own in your wallet. Freely transferable, tradeable on DEXes, and usable across DeFi.
-            </p>
-          </div>
-
-        </div>
-      </section>
-
-      {/* Verified Mainnet Deployments with Copyable CAs */}
-      <section className="bg-zinc-950 border border-zinc-850 rounded-2xl p-6 sm:p-8 space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-900 pb-5">
-          <div>
-            <div className="flex items-center gap-2">
-              <h3 className="font-bold text-base text-white">Verified Mainnet Deployments</h3>
-              <span className="text-[10px] bg-rh-green/10 text-rh-green border border-rh-green/20 px-2 py-0.5 rounded font-mono font-medium">
-                Live on Chain 4663
-              </span>
-            </div>
-            <p className="text-xs text-zinc-400 mt-0.5">
-              Smart contracts deployed on Robinhood Chain. Click to copy contract addresses (CA) or inspect on Blockscout.
-            </p>
-          </div>
+        <div className="flex items-center space-x-4 text-xs font-mono">
+          <span className="text-slate-400">270+ Leveraged Pairs</span>
+          <span className="text-slate-700">•</span>
           <a
-            href="https://robinhoodchain.blockscout.com"
+            href={`https://robinhoodchain.blockscout.com/address/${factoryAddress}`}
             target="_blank"
             rel="noreferrer"
-            className="text-xs text-zinc-400 hover:text-white flex items-center gap-1 transition"
+            className="text-rh-green hover:underline flex items-center gap-1"
           >
-            <span>Blockscout Explorer</span>
-            <ExternalLink className="w-3.5 h-3.5" />
+            <span>Factory Verified</span>
+            <ExternalLink className="w-3 h-3" />
           </a>
         </div>
+      </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-mono">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24 space-y-24">
+        
+        {/* HERO SECTION: Simple, Smart, Professional */}
+        <section className="space-y-8">
           
-          {/* Factory CA */}
-          <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-xl p-4 space-y-2.5">
-            <div className="flex items-center justify-between">
-              <span className="text-zinc-400 text-[11px]">dAsset Factory Contract</span>
-              <CopyButton text={factoryAddress} label="Copy CA" />
+          <div className="space-y-4 max-w-3xl">
+            <div className="inline-flex items-center space-x-2 px-2.5 py-1 rounded bg-white/[0.04] border border-white/[0.08] text-slate-300 text-xs font-mono">
+              <span className="w-1.5 h-1.5 rounded-full bg-rh-green"></span>
+              <span>Robinhood Chain Native</span>
             </div>
-            <div className="text-zinc-200 font-semibold truncate">
-              {factoryAddress}
+
+            <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight text-white leading-[1.08]">
+              Tokenized leveraged perps on Robinhood Chain.
+            </h1>
+
+            <p className="text-base sm:text-lg text-slate-400 leading-relaxed max-w-2xl font-normal">
+              dAssets packages leveraged crypto positions into standard tokens. Hold 3x and 5x exposure directly in your wallet with automated rebalancing, zero personal margin calls, and instant AMM liquidity.
+            </p>
+          </div>
+
+          {/* Primary Action Buttons */}
+          <div className="flex flex-wrap items-center gap-3 pt-2">
+            <button
+              onClick={onExploreMarkets}
+              className="flex items-center gap-2 bg-white hover:bg-slate-200 text-black font-semibold text-xs px-5 py-3 rounded-md transition active:scale-95 shadow-sm"
+            >
+              <span>Explore 270+ Markets</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+
+            {flagshipAsset && (
+              <button
+                onClick={() => onMintAsset(flagshipAsset)}
+                className="flex items-center gap-2 bg-[#12161F] hover:bg-[#181E2A] text-slate-200 border border-white/[0.12] text-xs font-medium px-4 py-3 rounded-md transition"
+              >
+                <Zap className="w-3.5 h-3.5 text-rh-green fill-current" />
+                <span>Mint dBTC3L (3x Long)</span>
+              </button>
+            )}
+
+            <a
+              href={`https://robinhoodchain.blockscout.com/address/${factoryAddress}`}
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-1.5 text-slate-400 hover:text-white text-xs px-3 py-3 transition font-mono"
+            >
+              <span>Contract Factory</span>
+              <ExternalLink className="w-3 h-3" />
+            </a>
+          </div>
+
+          {/* Key Metrics Strip */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-6 border-t border-white/[0.06] font-mono">
+            <div className="bg-[#0C0F14] border border-white/[0.06] rounded-lg p-4">
+              <div className="text-[11px] text-slate-500 uppercase tracking-wider">Available Assets</div>
+              <div className="text-2xl font-bold text-white mt-1">270+</div>
+              <div className="text-[10px] text-slate-500 mt-0.5">Majors, L1s, DeFi, Memes</div>
             </div>
-            <div className="pt-1">
+
+            <div className="bg-[#0C0F14] border border-white/[0.06] rounded-lg p-4">
+              <div className="text-[11px] text-slate-500 uppercase tracking-wider">Target Chain</div>
+              <div className="text-2xl font-bold text-rh-green mt-1">Chain 4663</div>
+              <div className="text-[10px] text-slate-500 mt-0.5">Robinhood Arbitrum Orbit</div>
+            </div>
+
+            <div className="bg-[#0C0F14] border border-white/[0.06] rounded-lg p-4">
+              <div className="text-[11px] text-slate-500 uppercase tracking-wider">Liquidation Risk</div>
+              <div className="text-2xl font-bold text-white mt-1">0%</div>
+              <div className="text-[10px] text-slate-500 mt-0.5">Automated 8h Rebalance</div>
+            </div>
+
+            <div className="bg-[#0C0F14] border border-white/[0.06] rounded-lg p-4">
+              <div className="text-[11px] text-slate-500 uppercase tracking-wider">Warp Route Fee</div>
+              <div className="text-2xl font-bold text-white mt-1">~$0.05</div>
+              <div className="text-[10px] text-slate-500 mt-0.5">Hyperlane Interchain Gas</div>
+            </div>
+          </div>
+
+        </section>
+
+
+        {/* FEATURED MARKETS: Live Market Highlights */}
+        <section className="space-y-4">
+          <div className="flex items-center justify-between border-b border-white/[0.06] pb-3">
+            <div>
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-300">
+                Featured Markets
+              </h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Real-time Oracle NAV feeds synchronized with Robinhood Chain.
+              </p>
+            </div>
+            <button
+              onClick={onExploreMarkets}
+              className="text-xs text-rh-green hover:underline flex items-center gap-1 font-mono"
+            >
+              <span>View All 270+</span>
+              <ArrowRight className="w-3 h-3" />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {featuredAssets.map((asset) => {
+              const isPositive = asset.change24h >= 0;
+              return (
+                <div
+                  key={asset.id}
+                  onClick={() => onSelectAsset(asset)}
+                  className="bg-[#0C0F14] hover:bg-[#11151D] border border-white/[0.06] hover:border-white/[0.14] rounded-lg p-4 transition cursor-pointer flex flex-col justify-between space-y-4"
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-white text-sm">{asset.symbol}</span>
+                        <span className="text-[10px] font-mono font-medium px-1.5 py-0.5 rounded bg-white/[0.06] text-slate-300">
+                          {Math.abs(asset.leverage)}x {asset.isShort ? 'S' : 'L'}
+                        </span>
+                      </div>
+                      <span className="text-[11px] text-slate-500 font-mono">{asset.underlyingName}</span>
+                    </div>
+
+                    <div className="text-right font-mono">
+                      <div className="text-sm font-bold text-white">
+                        ${asset.currentNav.toFixed(2)}
+                      </div>
+                      <div className={`text-[11px] font-medium flex items-center justify-end gap-0.5 ${isPositive ? 'text-rh-green' : 'text-red-400'}`}>
+                        {isPositive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                        <span>{isPositive ? '+' : ''}{asset.change24h}%</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-2 border-t border-white/[0.04] flex items-center justify-between text-[11px] font-mono">
+                    <span className="text-slate-500">Spot: ${asset.indexPrice.toLocaleString()}</span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onMintAsset(asset);
+                      }}
+                      className="px-2.5 py-1 bg-white/[0.06] hover:bg-white text-slate-200 hover:text-black rounded font-sans text-xs font-medium transition"
+                    >
+                      Mint
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+
+        {/* HOW IT WORKS: Clear, Simple, Intuitive for Normal People */}
+        <section className="space-y-6">
+          <div className="border-b border-white/[0.06] pb-3">
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-300">
+              How dAssets Works
+            </h2>
+            <p className="text-xs text-slate-500 mt-0.5">
+              No collateral management. No liquidation alarms. Just pure, composable exposure.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            
+            {/* Step 1 */}
+            <div className="bg-[#0C0F14] border border-white/[0.06] rounded-lg p-6 space-y-3">
+              <div className="text-xs font-mono text-slate-500 font-bold">01</div>
+              <h3 className="text-base font-bold text-white">Choose Your Market</h3>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Select from 270+ assets across BTC, ETH, SOL, Layer 1s, and DeFi tokens. Pick 3x or 5x long or short exposure depending on your market outlook.
+              </p>
+            </div>
+
+            {/* Step 2 */}
+            <div className="bg-[#0C0F14] border border-white/[0.06] rounded-lg p-6 space-y-3">
+              <div className="text-xs font-mono text-slate-500 font-bold">02</div>
+              <h3 className="text-base font-bold text-white">Mint On Robinhood Chain</h3>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Deposit USDC to mint the token directly to your wallet. Collateral is routed cross-chain via Hyperlane to Bounce.tech perpetual vaults on HyperEVM.
+              </p>
+            </div>
+
+            {/* Step 3 */}
+            <div className="bg-[#0C0F14] border border-white/[0.06] rounded-lg p-6 space-y-3">
+              <div className="text-xs font-mono text-slate-500 font-bold">03</div>
+              <h3 className="text-base font-bold text-white">Hold, Trade, or Seed Liquidity</h3>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Tokens automatically rebalance every 8 hours to maintain their target multiplier without liquidating you. Trade on AMMs, transfer to any wallet, or redeem anytime.
+              </p>
+            </div>
+
+          </div>
+        </section>
+
+
+        {/* VERIFIED ON-CHAIN CONTRACT REGISTRY: Institutional, Authoritative, 1-Click Copyable */}
+        <section className="bg-[#0A0D12] border border-white/[0.08] rounded-lg p-6 sm:p-8 space-y-6">
+          
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/[0.06] pb-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-base font-bold text-white">Robinhood Chain Mainnet Registry</h2>
+                <span className="text-[10px] bg-rh-green/10 text-rh-green border border-rh-green/30 px-2 py-0.5 rounded font-mono font-semibold">
+                  CHAIN ID 4663
+                </span>
+              </div>
+              <p className="text-xs text-slate-400 mt-1">
+                Official verified smart contracts deployed and broadcast on Robinhood Chain.
+              </p>
+            </div>
+
+            <a
+              href="https://robinhoodchain.blockscout.com"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-white transition font-mono"
+            >
+              <span>Blockscout Explorer</span>
+              <ExternalLink className="w-3.5 h-3.5" />
+            </a>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-mono">
+            
+            {/* Factory */}
+            <div className="bg-[#0E1218] border border-white/[0.06] rounded-md p-4 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-slate-400 text-[11px] font-sans font-medium">dAsset Factory</span>
+                <CopyButton text={factoryAddress} label="Copy CA" />
+              </div>
+              <div className="text-slate-200 font-bold truncate text-xs">
+                {factoryAddress}
+              </div>
               <a
                 href={`https://robinhoodchain.blockscout.com/address/${factoryAddress}`}
                 target="_blank"
                 rel="noreferrer"
-                className="text-rh-green hover:underline text-[11px] inline-flex items-center gap-1"
+                className="text-rh-green hover:underline text-[11px] inline-flex items-center gap-1 font-sans"
               >
-                <span>View on Blockscout</span>
+                <span>View on Explorer</span>
                 <ExternalLink className="w-3 h-3" />
               </a>
             </div>
-          </div>
 
-          {/* Flagship Token CA */}
-          <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-xl p-4 space-y-2.5">
-            <div className="flex items-center justify-between">
-              <span className="text-zinc-400 text-[11px]">Flagship Token (dBTC3L)</span>
-              <CopyButton text={flagshipAddress} label="Copy CA" />
-            </div>
-            <div className="text-zinc-200 font-semibold truncate">
-              {flagshipAddress}
-            </div>
-            <div className="pt-1">
+            {/* Flagship Token */}
+            <div className="bg-[#0E1218] border border-white/[0.06] rounded-md p-4 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-slate-400 text-[11px] font-sans font-medium">Flagship dBTC3L (3x Long)</span>
+                <CopyButton text={flagshipAddress} label="Copy CA" />
+              </div>
+              <div className="text-slate-200 font-bold truncate text-xs">
+                {flagshipAddress}
+              </div>
               <a
                 href={`https://robinhoodchain.blockscout.com/address/${flagshipAddress}`}
                 target="_blank"
                 rel="noreferrer"
-                className="text-rh-green hover:underline text-[11px] inline-flex items-center gap-1"
+                className="text-rh-green hover:underline text-[11px] inline-flex items-center gap-1 font-sans"
               >
-                <span>View on Blockscout</span>
+                <span>View on Explorer</span>
                 <ExternalLink className="w-3 h-3" />
               </a>
             </div>
-          </div>
 
-          {/* Oracle CA */}
-          <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-xl p-4 space-y-2.5">
-            <div className="flex items-center justify-between">
-              <span className="text-zinc-400 text-[11px]">Oracle Feed Contract</span>
-              <CopyButton text={oracleAddress} label="Copy CA" />
-            </div>
-            <div className="text-zinc-200 font-semibold truncate">
-              {oracleAddress}
-            </div>
-            <div className="pt-1">
+            {/* Oracle Feed */}
+            <div className="bg-[#0E1218] border border-white/[0.06] rounded-md p-4 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-slate-400 text-[11px] font-sans font-medium">Robinhood NAV Oracle</span>
+                <CopyButton text={oracleAddress} label="Copy CA" />
+              </div>
+              <div className="text-slate-200 font-bold truncate text-xs">
+                {oracleAddress}
+              </div>
               <a
                 href={`https://robinhoodchain.blockscout.com/address/${oracleAddress}`}
                 target="_blank"
                 rel="noreferrer"
-                className="text-rh-green hover:underline text-[11px] inline-flex items-center gap-1"
+                className="text-rh-green hover:underline text-[11px] inline-flex items-center gap-1 font-sans"
               >
-                <span>View on Blockscout</span>
+                <span>View on Explorer</span>
                 <ExternalLink className="w-3 h-3" />
               </a>
             </div>
-          </div>
 
-          {/* Hyperlane Mailbox */}
-          <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-xl p-4 space-y-2.5">
-            <div className="flex items-center justify-between">
-              <span className="text-zinc-400 text-[11px]">Hyperlane Mailbox (Domain 4663)</span>
-              <CopyButton text={mailboxAddress} label="Copy CA" />
-            </div>
-            <div className="text-zinc-200 font-semibold truncate">
-              {mailboxAddress}
-            </div>
-            <div className="pt-1">
+            {/* Hyperlane Mailbox */}
+            <div className="bg-[#0E1218] border border-white/[0.06] rounded-md p-4 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-slate-400 text-[11px] font-sans font-medium">Hyperlane Mailbox (Domain 4663)</span>
+                <CopyButton text={mailboxAddress} label="Copy CA" />
+              </div>
+              <div className="text-slate-200 font-bold truncate text-xs">
+                {mailboxAddress}
+              </div>
               <a
                 href={`https://robinhoodchain.blockscout.com/address/${mailboxAddress}`}
                 target="_blank"
                 rel="noreferrer"
-                className="text-rh-green hover:underline text-[11px] inline-flex items-center gap-1"
+                className="text-rh-green hover:underline text-[11px] inline-flex items-center gap-1 font-sans"
               >
-                <span>Official Hyperlane Contract</span>
+                <span>Official Mailbox Deployment</span>
                 <ExternalLink className="w-3 h-3" />
               </a>
             </div>
+
           </div>
 
-        </div>
-      </section>
+        </section>
 
+      </div>
     </div>
   );
 };

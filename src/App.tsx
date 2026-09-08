@@ -77,8 +77,10 @@ export const App: React.FC = () => {
         {activeView === 'home' && (
           <main>
             <HomeView
+              assets={assets}
               onExploreMarkets={() => setActiveView('markets')}
-              onOpenMintdBTC3L={handleOpenMintdBTC3L}
+              onSelectAsset={handleSelectAsset}
+              onMintAsset={(asset) => setMintAsset(asset)}
             />
           </main>
         )}

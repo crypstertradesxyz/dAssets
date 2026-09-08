@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Wallet, Shield, Check, ExternalLink, Sparkles, LogOut, ChevronRight } from 'lucide-react';
+import { X, Wallet, LogOut, ChevronRight, Check } from 'lucide-react';
 import { WalletState } from '../types';
 import { Web3Service } from '../services/web3';
 
@@ -27,26 +27,26 @@ export const WalletModal: React.FC<WalletModalProps> = ({ wallet, onClose }) => 
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-[#0D1217] border border-zinc-800 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl relative">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150">
+      <div className="bg-[#0D1016] border border-white/[0.12] rounded-lg w-full max-w-sm overflow-hidden shadow-2xl relative text-slate-100">
         
         {/* Modal Header */}
-        <div className="flex items-center justify-between p-5 border-b border-zinc-800 bg-zinc-900/50">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06] bg-[#0A0D12]">
           <div className="flex items-center space-x-2.5">
-            <div className="w-8 h-8 rounded-lg bg-rh-green/10 border border-rh-green/30 text-rh-green flex items-center justify-center">
-              <Wallet className="w-4 h-4" />
+            <div className="w-7 h-7 rounded bg-white/[0.06] border border-white/[0.10] text-slate-300 flex items-center justify-center">
+              <Wallet className="w-3.5 h-3.5" />
             </div>
             <div>
               <h3 className="font-bold text-sm text-white">
-                {wallet.isConnected ? 'Connected Wallet' : 'Connect Wallet'}
+                {wallet.isConnected ? 'Connected Account' : 'Connect Wallet'}
               </h3>
-              <p className="text-[11px] text-zinc-400">Robinhood Chain (ID: 4663)</p>
+              <p className="text-[11px] text-slate-400 font-mono">Robinhood Chain (4663)</p>
             </div>
           </div>
 
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition"
+            className="p-1 rounded text-slate-400 hover:text-white hover:bg-white/[0.06] transition"
           >
             <X className="w-4 h-4" />
           </button>
@@ -55,116 +55,90 @@ export const WalletModal: React.FC<WalletModalProps> = ({ wallet, onClose }) => 
         {/* Modal Body */}
         <div className="p-5 space-y-4">
           {wallet.isConnected ? (
-            /* Connected State */
-            <div className="space-y-4">
-              <div className="bg-zinc-900/90 border border-zinc-800 rounded-xl p-4 text-xs font-mono space-y-2.5">
-                <div className="flex justify-between text-zinc-400">
+            <div className="space-y-4 font-mono text-xs">
+              <div className="bg-[#090C10] border border-white/[0.06] rounded-md p-3.5 space-y-2">
+                <div className="flex justify-between text-slate-400">
                   <span>Address:</span>
                   <span className="text-white font-bold">{wallet.address}</span>
                 </div>
-                <div className="flex justify-between text-zinc-400">
+                <div className="flex justify-between text-slate-400">
                   <span>Network:</span>
                   <span className="text-rh-green font-bold">{wallet.networkName}</span>
                 </div>
-                <div className="flex justify-between text-zinc-400">
+                <div className="flex justify-between text-slate-400">
                   <span>USDC Balance:</span>
                   <span className="text-white font-bold">${wallet.balanceUsdc}</span>
                 </div>
-                <div className="flex justify-between text-zinc-400">
+                <div className="flex justify-between text-slate-400">
                   <span>ETH Balance:</span>
                   <span className="text-white font-bold">{wallet.balanceEth} ETH</span>
                 </div>
-                {wallet.isDemo && (
-                  <div className="pt-2 border-t border-zinc-800 text-[11px] text-zinc-400 font-sans">
-                    Connected with <strong className="text-white font-semibold">Quick Start Account</strong>. Pre-loaded with test funds so you can mint and test pools instantly.
-                  </div>
-                )}
               </div>
 
               <button
                 onClick={handleDisconnect}
-                className="w-full flex items-center justify-center gap-2 bg-zinc-800 hover:bg-red-500/20 hover:text-red-400 text-zinc-300 font-semibold py-2.5 px-4 rounded-xl border border-zinc-750 transition text-xs"
+                className="w-full flex items-center justify-center gap-2 bg-[#090C10] hover:bg-red-500/10 hover:text-red-400 text-slate-300 py-2.5 px-4 rounded-md border border-white/[0.08] transition text-xs font-sans font-medium"
               >
-                <LogOut className="w-4 h-4" />
+                <LogOut className="w-3.5 h-3.5" />
                 <span>Disconnect</span>
               </button>
             </div>
           ) : (
-            /* Connect Options */
-            <div className="space-y-2.5">
-              {/* Option 1: Quick Start */}
+            <div className="space-y-2">
+              {/* Option 1: Browser Extension / MetaMask */}
               <button
-                onClick={handleEnableDemo}
-                className="w-full flex items-center justify-between p-3.5 rounded-xl bg-gradient-to-r from-zinc-900 to-zinc-850 border border-zinc-700 hover:border-zinc-500 transition text-left group"
+                onClick={() => handleConnectInjected('metamask')}
+                className="w-full flex items-center justify-between p-3 rounded-md bg-[#090C10] hover:bg-[#121620] border border-white/[0.08] hover:border-white/[0.2] transition text-left group"
               >
                 <div className="flex items-center space-x-3">
-                  <div className="w-9 h-9 rounded-lg bg-white/10 text-white flex items-center justify-center font-bold">
-                    <Sparkles className="w-5 h-5" />
+                  <div className="w-8 h-8 rounded bg-amber-500/10 text-amber-400 flex items-center justify-center text-sm font-bold">
+                    🦊
                   </div>
                   <div>
-                    <div className="text-xs font-bold text-white flex items-center gap-1.5">
-                      <span>Quick Start Access</span>
-                      <span className="bg-white text-black font-bold text-[9px] px-1.5 py-0.2 rounded">
-                        1-Click
-                      </span>
-                    </div>
-                    <div className="text-[11px] text-zinc-400">
-                      Instantly test minting & pools on Robinhood Chain
-                    </div>
+                    <div className="text-xs font-bold text-white">MetaMask / Browser Wallet</div>
+                    <div className="text-[11px] text-slate-400">Direct on-chain connection</div>
                   </div>
                 </div>
-                <ChevronRight className="w-4 h-4 text-zinc-500 group-hover:text-rh-green transition" />
+                <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-white transition" />
               </button>
 
               {/* Option 2: Robinhood Wallet */}
               <button
                 onClick={() => handleConnectInjected('robinhood')}
-                className="w-full flex items-center justify-between p-3.5 rounded-xl bg-zinc-900/80 border border-zinc-800 hover:border-zinc-700 transition text-left group"
+                className="w-full flex items-center justify-between p-3 rounded-md bg-[#090C10] hover:bg-[#121620] border border-white/[0.08] hover:border-white/[0.2] transition text-left group"
               >
                 <div className="flex items-center space-x-3">
-                  <div className="w-9 h-9 rounded-lg bg-[#00C805]/10 text-rh-green flex items-center justify-center font-bold text-sm">
+                  <div className="w-8 h-8 rounded bg-rh-green/10 text-rh-green flex items-center justify-center text-xs font-bold font-mono">
                     RH
                   </div>
                   <div>
                     <div className="text-xs font-bold text-white">Robinhood Wallet</div>
-                    <div className="text-[11px] text-zinc-400">Connect via Robinhood mobile or extension</div>
+                    <div className="text-[11px] text-slate-400">Mobile or extension wallet</div>
                   </div>
                 </div>
-                <ChevronRight className="w-4 h-4 text-zinc-500 group-hover:text-white transition" />
+                <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-white transition" />
               </button>
 
-              {/* Option 3: MetaMask / Injected */}
+              {/* Option 3: Quick Start Sandbox Account */}
               <button
-                onClick={() => handleConnectInjected('metamask')}
-                className="w-full flex items-center justify-between p-3.5 rounded-xl bg-zinc-900/80 border border-zinc-800 hover:border-zinc-700 transition text-left group"
+                onClick={handleEnableDemo}
+                className="w-full flex items-center justify-between p-3 rounded-md bg-[#090C10] hover:bg-[#121620] border border-white/[0.08] hover:border-white/[0.2] transition text-left group"
               >
                 <div className="flex items-center space-x-3">
-                  <div className="w-9 h-9 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center font-bold text-sm">
-                    🦊
+                  <div className="w-8 h-8 rounded bg-white/[0.08] text-white flex items-center justify-center text-xs font-bold">
+                    ⚡
                   </div>
                   <div>
-                    <div className="text-xs font-bold text-white">MetaMask / Injected</div>
-                    <div className="text-[11px] text-zinc-400">Standard browser EVM wallet</div>
+                    <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                      <span>Quick Start Preview</span>
+                      <span className="text-[9px] font-mono bg-white/[0.1] text-slate-300 px-1 py-0.2 rounded">
+                        Simulated
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-slate-400">Instant test wallet with mock balance</div>
                   </div>
                 </div>
-                <ChevronRight className="w-4 h-4 text-zinc-500 group-hover:text-white transition" />
-              </button>
-
-              {/* Option 4: Rabby */}
-              <button
-                onClick={() => handleConnectInjected('rabby')}
-                className="w-full flex items-center justify-between p-3.5 rounded-xl bg-zinc-900/80 border border-zinc-800 hover:border-zinc-700 transition text-left group"
-              >
-                <div className="flex items-center space-x-3">
-                  <div className="w-9 h-9 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center font-bold text-sm">
-                    🐰
-                  </div>
-                  <div>
-                    <div className="text-xs font-bold text-white">Rabby Wallet</div>
-                    <div className="text-[11px] text-zinc-400">Multi-chain DeFi wallet</div>
-                  </div>
-                </div>
-                <ChevronRight className="w-4 h-4 text-zinc-500 group-hover:text-white transition" />
+                <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-white transition" />
               </button>
             </div>
           )}

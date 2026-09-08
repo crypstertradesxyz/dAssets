@@ -119,3 +119,28 @@ export async function mintGenuineOnChain(
     tokenAddress
   };
 }
+
+export async function addTokenToWallet(
+  tokenAddress: string,
+  symbol: string,
+  decimals: number = 18
+): Promise<boolean> {
+  const eth = (window as any).ethereum;
+  if (!eth) return false;
+  try {
+    return await eth.request({
+      method: 'wallet_watchAsset',
+      params: {
+        type: 'ERC20',
+        options: {
+          address: tokenAddress,
+          symbol,
+          decimals,
+        },
+      },
+    });
+  } catch (err) {
+    console.warn('Error adding token to wallet:', err);
+    return false;
+  }
+}
