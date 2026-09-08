@@ -193,8 +193,8 @@ export const AnnouncementVideo: React.FC = () => {
                   margin: '0 0 36px 0',
                 }}
               >
-                Traditional margin models wipe you out on flash crashes. <br />
-                <strong style={{ color: '#FFFFFF' }}>dAssets eliminates liquidation risk forever.</strong>
+                2x, 3x, and 5x Long & Inverse Short tokens with <br />
+                <strong style={{ color: '#FFFFFF' }}>zero borrowing debt and zero forced liquidations.</strong>
               </p>
 
               <div style={{ display: 'flex', gap: 16, justifyContent: 'center' }}>
@@ -596,7 +596,7 @@ export const AnnouncementVideo: React.FC = () => {
           zIndex: 50,
         }}
       >
-        <span>270+ Leveraged Pairs • Zero Liquidation Risk</span>
+        <span>270+ Markets • 2x, 3x, 5x Long & Inverse • Zero Liquidation</span>
         <span>x.com/dAssetsRH</span>
       </div>
     </div>
