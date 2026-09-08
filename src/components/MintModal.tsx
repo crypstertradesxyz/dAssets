@@ -399,7 +399,11 @@ export const MintModal: React.FC<MintModalProps> = ({
                       whileTap={{ scale: 0.98 }}
                       onClick={() => {
                         onClose();
-                        onOpenSeedPool(asset);
+                        onOpenSeedPool({
+                          ...asset,
+                          tokenAddress: activeTokenAddress || asset.tokenAddress,
+                          isMinted: true
+                        });
                       }}
                       className="flex items-center justify-center gap-1.5 bg-white hover:bg-slate-200 text-black font-semibold py-2.5 px-3 rounded-md text-xs transition"
                     >

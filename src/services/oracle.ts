@@ -16,6 +16,7 @@ export class OracleService {
   private lastFetchTime: number = 0;
   private rpcProvider: ethers.JsonRpcProvider | null = null;
   private oracleContract: ethers.Contract | null = null;
+  private factoryContract: ethers.Contract | null = null;
 
   private constructor() {
     try {
@@ -25,6 +26,17 @@ export class OracleService {
         oracleAddress,
         [
           'function prices(string) view returns (uint256 navPrice, uint256 indexPrice, int256 fundingRate24h, uint256 lastRebalance, uint256 updatedAt)'
+        ],
+        this.rpcProvider
+      );
+
+      const factoryAddress = deployedConfig?.factory || '0x31390C104d777c03B00E95967E3F2905993f947b';
+      this.factoryContract = new ethers.Contract(
+        factoryAddress,
+        [
+          'function getAssetCount() external view returns (uint256)',
+          'function assetSymbols(uint256) external view returns (string)',
+          'function getAsset(string symbol) external view returns (tuple(address tokenAddress, string symbol, string underlying, uint8 leverage, bool isShort, address poolAddress, uint256 totalMinted, uint256 createdAt))'
         ],
         this.rpcProvider
       );
@@ -42,12 +54,38 @@ export class OracleService {
 
   public init(initialAssets: LeveragedAsset[]) {
     this.currentAssets = [...initialAssets];
-    // Immediately fetch real market data
-    this.fetchRealMarketData();
 
-    // Poll real market prices every 30 seconds
+    // 1. Restore previously deployed tokens from localStorage cache
+    if (typeof window !== 'undefined' && window.localStorage) {
+      try {
+        const stored = JSON.parse(localStorage.getItem('dassets_deployed_tokens') || '{}');
+        for (const [sym, info] of Object.entries<any>(stored)) {
+          const idx = this.currentAssets.findIndex(a => a.symbol === sym);
+          if (idx !== -1 && info?.tokenAddress) {
+            this.currentAssets[idx] = {
+              ...this.currentAssets[idx],
+              isMinted: true,
+              tokenAddress: info.tokenAddress,
+              poolAddress: info.poolAddress || this.currentAssets[idx].poolAddress,
+              poolLiquidity: info.poolLiquidity || this.currentAssets[idx].poolLiquidity,
+            };
+          }
+        }
+      } catch (e) {
+        console.warn('Failed to load deployed tokens from storage:', e);
+      }
+    }
+
+    // 2. Immediately fetch real market data and on-chain factory registry
+    this.fetchRealMarketData();
+    this.syncDeployedAssetsFromFactory();
+
+    // Poll real market prices and on-chain registry every 30 seconds
     if (!this.pollIntervalId) {
-      this.pollIntervalId = setInterval(() => this.fetchRealMarketData(), 30000);
+      this.pollIntervalId = setInterval(() => {
+        this.fetchRealMarketData();
+        this.syncDeployedAssetsFromFactory();
+      }, 30000);
     }
   }
 
@@ -156,6 +194,115 @@ export class OracleService {
         poolLiquidity: poolLiquidity || this.currentAssets[idx].poolLiquidity,
       };
       this.subscribers.forEach(cb => cb([...this.currentAssets]));
+    }
+    this.persistAssetToStorage(symbol, tokenAddress, poolAddress, poolLiquidity);
+  }
+
+  /**
+   * Synchronizes all registered assets directly from the on-chain dAssetFactory on Robinhood Chain Mainnet.
+   * Ensures all deployed and minted assets are reflected immediately in UI without manual refresh.
+   */
+  public async syncDeployedAssetsFromFactory() {
+    if (!this.factoryContract) return;
+    try {
+      const count = await this.factoryContract.getAssetCount();
+      const countNum = Number(count);
+      let hasChanges = false;
+
+      for (let i = 0; i < countNum; i++) {
+        const symbol = await this.factoryContract.assetSymbols(i);
+        const info = await this.factoryContract.getAsset(symbol);
+
+        if (info && info.tokenAddress && info.tokenAddress !== ethers.ZeroAddress) {
+          const idx = this.currentAssets.findIndex(a => a.symbol === symbol);
+          const hasValidPool = info.poolAddress && info.poolAddress !== ethers.ZeroAddress;
+
+          if (idx !== -1) {
+            const current = this.currentAssets[idx];
+            const tokenChanged = current.tokenAddress !== info.tokenAddress || !current.isMinted;
+            const poolChanged = hasValidPool && current.poolAddress !== info.poolAddress;
+
+            if (tokenChanged || poolChanged) {
+              this.currentAssets[idx] = {
+                ...current,
+                isMinted: true,
+                tokenAddress: info.tokenAddress,
+                poolAddress: hasValidPool ? info.poolAddress : current.poolAddress,
+              };
+              hasChanges = true;
+            }
+          }
+
+          this.persistAssetToStorage(
+            symbol,
+            info.tokenAddress,
+            hasValidPool ? info.poolAddress : undefined
+          );
+        }
+      }
+
+      if (hasChanges) {
+        this.subscribers.forEach(cb => cb([...this.currentAssets]));
+      }
+    } catch (err) {
+      console.warn('Syncing deployed factory assets:', err);
+    }
+  }
+
+  /**
+   * Looks up an asset token address on-chain or from local cache.
+   * If found on-chain, automatically marks it as minted and updates subscribers.
+   */
+  public async lookupOnChainAsset(symbol: string): Promise<string | null> {
+    // 1. Check in-memory state
+    const mem = this.currentAssets.find(a => a.symbol === symbol);
+    if (mem?.tokenAddress) return mem.tokenAddress;
+
+    // 2. Check localStorage cache
+    if (typeof window !== 'undefined' && window.localStorage) {
+      try {
+        const stored = JSON.parse(localStorage.getItem('dassets_deployed_tokens') || '{}');
+        if (stored[symbol]?.tokenAddress) {
+          this.updateAssetMintStatus(symbol, stored[symbol].tokenAddress, stored[symbol].poolAddress);
+          return stored[symbol].tokenAddress;
+        }
+      } catch (e) {}
+    }
+
+    // 3. Query on-chain factory directly
+    if (this.factoryContract) {
+      try {
+        const info = await this.factoryContract.getAsset(symbol);
+        if (info && info.tokenAddress && info.tokenAddress !== ethers.ZeroAddress) {
+          const hasValidPool = info.poolAddress && info.poolAddress !== ethers.ZeroAddress;
+          this.updateAssetMintStatus(
+            symbol,
+            info.tokenAddress,
+            hasValidPool ? info.poolAddress : undefined
+          );
+          return info.tokenAddress;
+        }
+      } catch (err) {
+        console.warn(`Could not lookup on-chain asset ${symbol}:`, err);
+      }
+    }
+
+    return null;
+  }
+
+  private persistAssetToStorage(symbol: string, tokenAddress: string, poolAddress?: string, poolLiquidity?: number) {
+    if (typeof window === 'undefined' || !window.localStorage) return;
+    try {
+      const stored = JSON.parse(localStorage.getItem('dassets_deployed_tokens') || '{}');
+      stored[symbol] = {
+        tokenAddress,
+        poolAddress: poolAddress || stored[symbol]?.poolAddress,
+        poolLiquidity: poolLiquidity || stored[symbol]?.poolLiquidity,
+        updatedAt: Date.now(),
+      };
+      localStorage.setItem('dassets_deployed_tokens', JSON.stringify(stored));
+    } catch (e) {
+      console.warn('Could not persist deployed asset to localStorage:', e);
     }
   }
 

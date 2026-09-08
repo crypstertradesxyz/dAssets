@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, 
@@ -58,6 +58,26 @@ export const CreatePoolModal: React.FC<CreatePoolModalProps> = ({
   const usdcRequired = Number((amountNumber * selectedAsset.currentNav).toFixed(2));
   const estimatedApr = feeTier === '0.05%' ? 18.2 : feeTier === '0.30%' ? 32.4 : 44.8;
 
+  // Dynamically resolve on-chain tokenAddress if missing in state
+  useEffect(() => {
+    let isCancelled = false;
+    async function resolveTokenAddress() {
+      if (!selectedAsset.tokenAddress) {
+        const onChainAddr = await OracleService.getInstance().lookupOnChainAsset(selectedAsset.symbol);
+        if (onChainAddr && !isCancelled) {
+          setSelectedAsset(prev => ({
+            ...prev,
+            tokenAddress: onChainAddr,
+            isMinted: true
+          }));
+          setDeployError(null);
+        }
+      }
+    }
+    resolveTokenAddress();
+    return () => { isCancelled = true; };
+  }, [selectedAsset.symbol, selectedAsset.tokenAddress]);
+
   const filteredAssets = assets.filter(
     a => a.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
          a.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -96,11 +116,6 @@ export const CreatePoolModal: React.FC<CreatePoolModalProps> = ({
       }
     }
 
-    if (!selectedAsset.tokenAddress) {
-      setDeployError(`${selectedAsset.symbol} has not been deployed on Robinhood Chain yet. Please deploy/mint it first via the Markets tab before registering a liquidity pool.`);
-      return;
-    }
-
     setIsDeploying(true);
 
     try {
@@ -127,6 +142,56 @@ export const CreatePoolModal: React.FC<CreatePoolModalProps> = ({
 
       const factoryAddress = deployedConfig?.factory || '0x31390C104d777c03B00E95967E3F2905993f947b';
       const iface = new ethers.Interface(artifacts.dAssetFactory.abi);
+
+      // Resolve token address dynamically on-chain if missing in state
+      let tokenAddress: string | undefined = selectedAsset.tokenAddress;
+      if (!tokenAddress) {
+        const found = await OracleService.getInstance().lookupOnChainAsset(selectedAsset.symbol);
+        if (found) {
+          tokenAddress = found;
+          setSelectedAsset(prev => ({ ...prev, tokenAddress: found, isMinted: true }));
+        }
+      }
+
+      // If the asset token has not yet been registered on-chain, automatically deploy the ERC20 asset contract first
+      if (!tokenAddress) {
+        console.log(`Auto-deploying asset ${selectedAsset.symbol} to factory before pool registration...`);
+        const hyperevmId = ethers.keccak256(ethers.toUtf8Bytes(selectedAsset.hyperevmAddress || `hyperevm-${selectedAsset.symbol.toLowerCase()}`));
+        const deployData = iface.encodeFunctionData('deployAsset', [
+          selectedAsset.name,
+          selectedAsset.symbol,
+          selectedAsset.underlying,
+          Math.abs(selectedAsset.leverage),
+          selectedAsset.isShort,
+          hyperevmId
+        ]);
+
+        let deployTxHash: string;
+        try {
+          deployTxHash = await eth.request({
+            method: 'eth_sendTransaction',
+            params: [{
+              from: creator,
+              to: factoryAddress,
+              data: deployData,
+              value: '0x0',
+            }],
+          });
+        } catch (rawErr: any) {
+          if (rawErr?.message?.toLowerCase().includes('nonce') || rawErr?.data?.message?.toLowerCase().includes('nonce')) {
+            throw new Error('INVALID_NONCE');
+          }
+          throw rawErr;
+        }
+
+        await provider.waitForTransaction(deployTxHash);
+        const resolved = await OracleService.getInstance().lookupOnChainAsset(selectedAsset.symbol);
+        if (!resolved) {
+          throw new Error(`Failed to resolve token address for ${selectedAsset.symbol} after deployment.`);
+        }
+        tokenAddress = resolved;
+        setSelectedAsset(prev => ({ ...prev, tokenAddress: resolved, isMinted: true }));
+      }
 
       // Deterministic pair address derived from token CA and pair config
       const salt = ethers.keccak256(ethers.toUtf8Bytes(`${selectedAsset.symbol}-${pairedSymbol}-${feeTier}`));
@@ -180,7 +245,7 @@ export const CreatePoolModal: React.FC<CreatePoolModalProps> = ({
 
       OracleService.getInstance().updateAssetMintStatus(
         selectedAsset.symbol,
-        selectedAsset.tokenAddress,
+        tokenAddress,
         pool.poolAddress,
         initialTvl
       );
@@ -352,8 +417,19 @@ export const CreatePoolModal: React.FC<CreatePoolModalProps> = ({
                           rounded="md" 
                         />
                         <div>
-                          <span className="font-bold text-white font-mono">{selectedAsset.symbol}</span>
-                          <span className="text-slate-400 ml-2 text-[11px] font-sans">({selectedAsset.name})</span>
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-white font-mono">{selectedAsset.symbol}</span>
+                            {selectedAsset.tokenAddress ? (
+                              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-rh-green/10 text-rh-green border border-rh-green/20">
+                                Deployed ({selectedAsset.tokenAddress.slice(0, 6)}...{selectedAsset.tokenAddress.slice(-4)})
+                              </span>
+                            ) : (
+                              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-300 border border-blue-500/20">
+                                Auto-deploys on seed
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-slate-400 text-[11px] font-sans">({selectedAsset.name})</span>
                         </div>
                       </div>
                       <ChevronDown className="w-4 h-4 text-slate-400" />
@@ -386,7 +462,14 @@ export const CreatePoolModal: React.FC<CreatePoolModalProps> = ({
                             >
                               <div className="flex items-center space-x-2.5">
                                 <TokenLogo underlying={asset.underlying} iconColor={asset.iconColor} size="xs" rounded="sm" />
-                                <span className="font-mono font-bold text-white">{asset.symbol}</span>
+                                <div className="flex items-center gap-1.5">
+                                  <span className="font-mono font-bold text-white">{asset.symbol}</span>
+                                  {asset.tokenAddress && (
+                                    <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-rh-green/10 text-rh-green border border-rh-green/20">
+                                      Deployed
+                                    </span>
+                                  )}
+                                </div>
                                 <span className="text-slate-400 text-[11px]">{asset.underlying}</span>
                               </div>
                               <span className="text-slate-300 font-mono">${asset.currentNav.toFixed(2)}</span>

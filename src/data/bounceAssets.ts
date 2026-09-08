@@ -99,9 +99,13 @@ baseAssets.forEach((asset) => {
     const fundingRate = 0.0;
     const openInterest = 0;
 
-    // dBTC3L is the verified deployed flagship token on Robinhood Chain Mainnet (Chain 4663)
-    const isPreMinted = symbol === 'dBTC3L';
-    const tokenAddress = isPreMinted ? '0x5164E1dc1Be45a0Fbe4D6A25A4713225E9bb56F6' : undefined;
+    // dBTC3L and dBTC5L are verified deployed tokens on Robinhood Chain Mainnet (Chain 4663)
+    const isPreMinted = symbol === 'dBTC3L' || symbol === 'dBTC5L';
+    const tokenAddress = symbol === 'dBTC3L'
+      ? '0x5164E1dc1Be45a0Fbe4D6A25A4713225E9bb56F6'
+      : symbol === 'dBTC5L'
+      ? '0xE0Df63EDFDC180E256426db9E95E99F40B8B33bF'
+      : undefined;
 
     INITIAL_ASSETS.push({
       id: symbol.toLowerCase(),

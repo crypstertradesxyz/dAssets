@@ -314,22 +314,39 @@ export class Web3Service {
         const balanceWei = await ethersProvider.getBalance(accountAddress);
         formattedEth = parseFloat(ethers.formatEther(balanceWei)).toFixed(4);
 
-        // Query genuine dBTC3L token balance on Robinhood Chain
+        // Query genuine dAsset token balances on Robinhood Chain
         if (currentChainId === ROBINHOOD_CHAIN.chainId) {
-          try {
-            const flagshipAddress = '0x5164E1dc1Be45a0Fbe4D6A25A4713225E9bb56F6';
-            const tokenContract = new ethers.Contract(
-              flagshipAddress,
-              ['function balanceOf(address) view returns (uint256)'],
-              ethersProvider
-            );
-            const tokenBalWei = await tokenContract.balanceOf(accountAddress);
-            const tokenQty = parseFloat(ethers.formatUnits(tokenBalWei, 18));
-            if (tokenQty > 0) {
-              holdings['dBTC3L'] = tokenQty;
+          const knownTokens: Record<string, string> = {
+            'dBTC3L': '0x5164E1dc1Be45a0Fbe4D6A25A4713225E9bb56F6',
+            'dBTC5L': '0xE0Df63EDFDC180E256426db9E95E99F40B8B33bF',
+          };
+
+          if (typeof window !== 'undefined' && window.localStorage) {
+            try {
+              const stored = JSON.parse(localStorage.getItem('dassets_deployed_tokens') || '{}');
+              for (const [sym, info] of Object.entries<any>(stored)) {
+                if (info?.tokenAddress) {
+                  knownTokens[sym] = info.tokenAddress;
+                }
+              }
+            } catch (e) {}
+          }
+
+          for (const [sym, addr] of Object.entries(knownTokens)) {
+            try {
+              const tokenContract = new ethers.Contract(
+                addr,
+                ['function balanceOf(address) view returns (uint256)'],
+                ethersProvider
+              );
+              const tokenBalWei = await tokenContract.balanceOf(accountAddress);
+              const tokenQty = parseFloat(ethers.formatUnits(tokenBalWei, 18));
+              if (tokenQty > 0) {
+                holdings[sym] = tokenQty;
+              }
+            } catch (err) {
+              // silent token balance fallback
             }
-          } catch (err) {
-            // silent token balance fallback
           }
         }
       } catch (err) {

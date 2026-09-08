@@ -160,6 +160,13 @@ export class BridgeService {
     };
 
     this.pools.unshift(pool);
+    if (typeof window !== 'undefined' && window.localStorage) {
+      try {
+        localStorage.setItem('dassets_uniswap_pools', JSON.stringify(this.pools));
+      } catch (e) {
+        console.warn('Could not persist pools to localStorage:', e);
+      }
+    }
     this.notifyPools();
     return pool;
   }
