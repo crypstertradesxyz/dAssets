@@ -193,6 +193,22 @@ export const OracleTerminal: React.FC<OracleTerminalProps> = ({
                 <Droplets className="w-3.5 h-3.5 text-rh-green" />
                 <span>Seed Pool</span>
               </motion.button>
+
+              {asset.poolAddress && (
+                <motion.a
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  href={`https://app.uniswap.org/explore/pools/4663/${asset.poolAddress}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 bg-pink-500/10 hover:bg-pink-500/20 text-pink-400 hover:text-pink-300 border border-pink-500/25 px-3.5 py-2.5 rounded-md text-xs font-medium transition"
+                  title="Trade on Uniswap v3"
+                >
+                  <img src="/logos/uni.png" alt="Uniswap" className="w-3.5 h-3.5 rounded-full" />
+                  <span>Trade on Uniswap</span>
+                  <ExternalLink className="w-3 h-3 opacity-70" />
+                </motion.a>
+              )}
             </div>
           </div>
 

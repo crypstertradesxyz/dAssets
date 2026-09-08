@@ -215,9 +215,16 @@ export const PoolsView: React.FC<PoolsViewProps> = ({
                             <span className="text-slate-500">/</span>
                             <span className="text-slate-300">{pool.pairedSymbol || 'USDC'}</span>
                           </div>
-                          <div className="text-[10px] text-slate-400 font-sans">
-                            Uniswap v3 • {pool.feeTier || '0.30%'}
-                          </div>
+                          <a
+                            href={`https://app.uniswap.org/explore/pools/4663/${pool.poolAddress}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[10px] text-pink-400 hover:text-pink-300 font-sans flex items-center gap-1 group/link"
+                            title="View Pool on Uniswap v3"
+                          >
+                            <span>Uniswap v3 • {pool.feeTier || '0.30%'}</span>
+                            <ExternalLink className="w-2.5 h-2.5 opacity-70 group-hover/link:opacity-100" />
+                          </a>
                         </div>
                       </div>
 
@@ -250,6 +257,17 @@ export const PoolsView: React.FC<PoolsViewProps> = ({
                         <Plus className="w-3.5 h-3.5 text-rh-green" />
                         <span>Add Liquidity</span>
                       </button>
+                      <a
+                        href={`https://app.uniswap.org/explore/pools/4663/${pool.poolAddress}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-3 py-2 bg-pink-500/10 hover:bg-pink-500/20 border border-pink-500/25 text-pink-400 hover:text-pink-300 rounded-md text-xs font-semibold transition flex items-center justify-center gap-1.5 shadow-sm"
+                        title="Open Pool on Uniswap v3"
+                      >
+                        <img src="/logos/uni.png" alt="Uniswap" className="w-3.5 h-3.5 rounded-full" />
+                        <span>Uniswap</span>
+                        <ExternalLink className="w-3 h-3 opacity-70" />
+                      </a>
                       <a
                         href={`https://robinhoodchain.blockscout.com/address/${pool.poolAddress}`}
                         target="_blank"
@@ -395,16 +413,25 @@ export const PoolsView: React.FC<PoolsViewProps> = ({
                         {/* Pool Contract */}
                         <td className="py-3.5 px-4">
                           <div className="flex items-center gap-1.5">
-                            <span className="text-slate-300 text-xs">
+                            <span className="text-slate-300 text-xs font-mono">
                               {pool.poolAddress.slice(0, 6)}...{pool.poolAddress.slice(-4)}
                             </span>
                             <CopyButton text={pool.poolAddress} label="Copy" />
+                            <a
+                              href={`https://app.uniswap.org/explore/pools/4663/${pool.poolAddress}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-pink-400 hover:text-pink-300 transition flex items-center"
+                              title="View Pool on Uniswap v3"
+                            >
+                              <img src="/logos/uni.png" alt="Uniswap" className="w-3.5 h-3.5 rounded-full inline-block" />
+                            </a>
                             <a
                               href={`https://robinhoodchain.blockscout.com/address/${pool.poolAddress}`}
                               target="_blank"
                               rel="noreferrer"
                               className="text-slate-500 hover:text-slate-200 transition"
-                              title="Blockscout"
+                              title="Blockscout Explorer"
                             >
                               <ExternalLink className="w-3 h-3" />
                             </a>
@@ -414,6 +441,17 @@ export const PoolsView: React.FC<PoolsViewProps> = ({
                         {/* Actions */}
                         <td className="py-3.5 px-4 text-right">
                           <div className="flex items-center justify-end gap-2 font-sans">
+                            <a
+                              href={`https://app.uniswap.org/explore/pools/4663/${pool.poolAddress}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="bg-pink-500/10 hover:bg-pink-500/20 text-pink-400 hover:text-pink-300 border border-pink-500/25 px-2.5 py-1.5 rounded text-xs font-semibold transition inline-flex items-center gap-1.5"
+                              title="Open Pool on Uniswap v3"
+                            >
+                              <img src="/logos/uni.png" alt="Uniswap" className="w-3 h-3 rounded-full" />
+                              <span>Uniswap</span>
+                              <ExternalLink className="w-2.5 h-2.5 opacity-70" />
+                            </a>
                             <button
                               onClick={() => handleOpenCreate(asset)}
                               className="bg-white/[0.06] hover:bg-white/[0.12] text-slate-200 px-3 py-1.5 rounded text-xs font-semibold transition"

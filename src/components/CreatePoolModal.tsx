@@ -419,10 +419,20 @@ export const CreatePoolModal: React.FC<CreatePoolModalProps> = ({
                   )}
                 </div>
 
-                <div className="pt-2">
+                <div className="pt-2 space-y-2">
+                  <a
+                    href={`https://app.uniswap.org/explore/pools/4663/${createdPool.poolAddress}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full bg-pink-500 hover:bg-pink-400 text-white font-semibold py-3 px-4 rounded-md text-xs transition flex items-center justify-center gap-2 shadow-lg shadow-pink-500/20"
+                  >
+                    <img src="/logos/uni.png" alt="Uniswap" className="w-4 h-4 rounded-full bg-white p-0.5" />
+                    <span>Open Pool on Uniswap v3</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
                   <button
                     onClick={onClose}
-                    className="w-full bg-white hover:bg-slate-200 text-black font-semibold py-3 px-4 rounded-md text-xs transition"
+                    className="w-full bg-white/[0.06] hover:bg-white/[0.12] text-white font-semibold py-2.5 px-4 rounded-md text-xs transition"
                   >
                     View in Showcase Directory
                   </button>
