@@ -14,6 +14,18 @@ export function getUniswapSwapUrl(tokenAddress?: string): string {
 }
 
 /**
+ * Direct link to Uniswap Swap interface configured to sell the leveraged token back for ETH.
+ * inputCurrency: tokenAddress (your leveraged token)
+ * outputCurrency: ETH (native Robinhood Chain ETH)
+ */
+export function getUniswapSellUrl(tokenAddress?: string): string {
+  if (!tokenAddress || !tokenAddress.startsWith('0x')) {
+    return 'https://app.uniswap.org/swap?chain=robinhood&outputCurrency=ETH';
+  }
+  return `https://app.uniswap.org/swap?chain=robinhood&inputCurrency=${tokenAddress}&outputCurrency=ETH`;
+}
+
+/**
  * Direct link to Uniswap Add Liquidity interface for Robinhood Chain.
  */
 export function getUniswapAddLiquidityUrl(tokenAddress?: string): string {

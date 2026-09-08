@@ -30,6 +30,7 @@ interface MintModalProps {
   onClose: () => void;
   onOpenSeedPool: (asset: LeveragedAsset) => void;
   onOpenWalletModal: () => void;
+  initialTab?: 'mint' | 'redeem';
 }
 
 export const MintModal: React.FC<MintModalProps> = ({
@@ -38,9 +39,13 @@ export const MintModal: React.FC<MintModalProps> = ({
   onClose,
   onOpenSeedPool,
   onOpenWalletModal,
+  initialTab = 'mint',
 }) => {
-  const [activeTab, setActiveTab] = useState<'mint' | 'redeem'>('mint');
-  const [amountInput, setAmountInput] = useState('10');
+  const userHolding = wallet.holdings?.[asset.symbol] || 0;
+  const [activeTab, setActiveTab] = useState<'mint' | 'redeem'>(initialTab);
+  const [amountInput, setAmountInput] = useState(
+    initialTab === 'redeem' && userHolding > 0 ? String(userHolding) : '10'
+  );
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentStep, setCurrentStep] = useState<'idle' | 'locking' | 'attesting' | 'completed'>('idle');
   const [completedTx, setCompletedTx] = useState<BridgeTransaction | null>(null);
@@ -48,8 +53,14 @@ export const MintModal: React.FC<MintModalProps> = ({
   const [txError, setTxError] = useState<string | null>(null);
   const [isSwitchingChain, setIsSwitchingChain] = useState(false);
 
+  React.useEffect(() => {
+    setActiveTab(initialTab);
+    if (initialTab === 'redeem' && userHolding > 0) {
+      setAmountInput(String(userHolding));
+    }
+  }, [initialTab, userHolding]);
+
   const isWrongNetwork = wallet.isConnected && wallet.chainId !== 4663;
-  const userHolding = wallet.holdings?.[asset.symbol] || 0;
   const amountNumber = parseFloat(amountInput) || 0;
   const bridgeFee = 0.05; // $0.05 Robinhood L2 gas fee
 

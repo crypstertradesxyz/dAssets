@@ -14,21 +14,22 @@ import {
   TrendingUp, 
   Copy,
   Plus,
-  Coins
+  Coins,
+  ArrowDownLeft
 } from 'lucide-react';
 import { LeveragedAsset, WalletState, AppView, LiquidityPool } from '../types';
 import { BridgeService } from '../services/bridge';
 import { Web3Service } from '../services/web3';
 import { TokenLogo } from './TokenLogo';
 import { CopyButton } from './CopyButton';
-import { getUniswapSwapUrl, getBlockscoutAddressUrl } from '../utils/uniswap';
+import { getUniswapSwapUrl, getUniswapSellUrl, getBlockscoutAddressUrl } from '../utils/uniswap';
 import { RemoveLiquidityModal } from './RemoveLiquidityModal';
 
 interface PortfolioViewProps {
   assets: LeveragedAsset[];
   wallet: WalletState;
   onOpenWalletModal: () => void;
-  onMintAsset: (asset: LeveragedAsset) => void;
+  onMintAsset: (asset: LeveragedAsset, initialTab?: 'mint' | 'redeem') => void;
   onSeedPool: (asset: LeveragedAsset) => void;
   onNavigate: (view: AppView, asset?: LeveragedAsset) => void;
 }
@@ -383,127 +384,154 @@ export const PortfolioView: React.FC<PortfolioViewProps> = ({
                     </button>
                   </div>
                 ) : (
-                  <div className="glass-panel rounded-2xl overflow-hidden shadow-xl border border-white/[0.08]">
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-left text-xs">
-                        <thead className="bg-[#090C10]/90 text-slate-400 font-mono uppercase text-[10px] border-b border-white/[0.06]">
-                          <tr>
-                            <th className="py-3 px-4">Position Asset</th>
-                            <th className="py-3 px-4">Tokens Held</th>
-                            <th className="py-3 px-4">Oracle NAV</th>
-                            <th className="py-3 px-4">Current Value ($ USD)</th>
-                            <th className="py-3 px-4">24h Change</th>
-                            <th className="py-3 px-4 text-right">Actions</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-white/[0.04]">
-                          {holdingsList.map((h) => (
-                            <tr key={h.symbol} className="hover:bg-white/[0.02] transition">
-                              
-                              {/* Position Asset */}
-                              <td className="py-3.5 px-4">
-                                <div className="flex items-center space-x-3">
-                                  <TokenLogo 
-                                    symbol={h.symbol} 
-                                    iconColor={h.asset?.iconColor} 
-                                    size="sm" 
-                                    rounded="md" 
-                                  />
-                                  <div>
-                                    <div className="font-bold text-white font-mono flex items-center gap-1.5 text-xs">
-                                      <span>{h.symbol}</span>
-                                      {h.asset && (
-                                        <span className={`px-1.5 py-0.2 rounded text-[10px] font-bold ${
-                                          h.asset.isShort 
-                                            ? 'bg-red-500/10 text-red-400 border border-red-500/20' 
-                                            : 'bg-rh-green/10 text-rh-green border border-rh-green/20'
-                                        }`}>
-                                          {h.asset.isShort ? '▼' : '▲'} {Math.abs(h.asset.leverage)}x
-                                        </span>
-                                      )}
-                                    </div>
-                                    <span className="text-[10px] text-slate-400 font-sans">
-                                      {h.asset?.name || 'Synthetic Position'}
-                                    </span>
-                                  </div>
-                                </div>
-                              </td>
+                  <div className="space-y-3">
+                    {/* How to Convert Back to ETH Banner */}
+                    <div className="bg-white/[0.03] border border-white/[0.08] rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                      <div className="flex items-center gap-2.5">
+                        <span className="p-1.5 rounded-lg bg-rh-green/10 text-rh-green font-mono font-bold text-xs">EXIT</span>
+                        <div className="text-slate-300 leading-snug">
+                          <span className="text-white font-semibold">How to convert back to regular ETH:</span>
+                          <span className="text-slate-400 block sm:inline sm:ml-1">
+                            Use <strong className="text-pink-300">Sell for ETH</strong> for instant Uniswap market swaps, or <strong className="text-emerald-300">Redeem</strong> to settle at live Oracle NAV without AMM slippage.
+                          </span>
+                        </div>
+                      </div>
+                    </div>
 
-                              {/* Balance */}
-                              <td className="py-3.5 px-4 font-mono">
-                                <span className="font-bold text-white">{h.qty.toLocaleString()}</span>
-                                <span className="text-slate-500 text-[10px] block font-sans">tokens in wallet</span>
-                              </td>
-
-                              {/* Oracle NAV */}
-                              <td className="py-3.5 px-4 font-mono">
-                                <span className="text-slate-300 font-semibold">${h.nav.toFixed(2)}</span>
-                                <span className="text-[10px] text-slate-500 block font-sans">1 {h.symbol}</span>
-                              </td>
-
-                              {/* Current Value */}
-                              <td className="py-3.5 px-4 font-mono">
-                                <div className="text-white font-bold text-sm">
-                                  ${h.usdValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                </div>
-                                <span className="text-[10px] text-slate-500 font-sans">
-                                  {totalNetWorth > 0 ? ((h.usdValue / totalNetWorth) * 100).toFixed(1) : 0}% of portfolio
-                                </span>
-                              </td>
-
-                              {/* 24h Change */}
-                              <td className="py-3.5 px-4 font-mono">
-                                <span className={`font-semibold flex items-center gap-0.5 ${h.change24h >= 0 ? 'text-rh-green' : 'text-red-400'}`}>
-                                  {h.change24h >= 0 ? <ArrowUpRight className="w-3.5 h-3.5" /> : <ArrowDownRight className="w-3.5 h-3.5" />}
-                                  <span>{h.change24h >= 0 ? '+' : ''}{h.change24h.toFixed(2)}%</span>
-                                </span>
-                              </td>
-
-                              {/* Actions */}
-                              <td className="py-3.5 px-4 text-right">
-                                <div className="flex items-center justify-end gap-1.5 font-sans">
-                                  {/* Direct Uniswap Trade Link */}
-                                  {(h.asset?.tokenAddress || h.asset?.poolAddress) && (
-                                    <a
-                                      href={getUniswapSwapUrl(h.asset?.tokenAddress)}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="bg-pink-500/10 hover:bg-pink-500/20 text-pink-400 hover:text-pink-300 border border-pink-500/25 px-2.5 py-1.5 rounded text-xs font-semibold transition inline-flex items-center gap-1 cursor-pointer"
-                                      title="Trade on Uniswap (Robinhood Chain)"
-                                    >
-                                      <img src="/logos/uni.png" alt="Uniswap" className="w-3 h-3 rounded-full" />
-                                      <span>Trade</span>
-                                      <ExternalLink className="w-2.5 h-2.5 opacity-70" />
-                                    </a>
-                                  )}
-
-                                  {/* Seed Pool */}
-                                  {h.asset && (
-                                    <button
-                                      onClick={() => onSeedPool(h.asset!)}
-                                      className="bg-white/[0.06] hover:bg-white/[0.12] text-slate-200 px-2.5 py-1.5 rounded text-xs font-semibold transition flex items-center gap-1"
-                                      title="Seed Uniswap Pool"
-                                    >
-                                      <Droplets className="w-3 h-3 text-rh-green" />
-                                      <span>Seed LP</span>
-                                    </button>
-                                  )}
-
-                                  {/* Terminal / Trade */}
-                                  {h.asset && (
-                                    <button
-                                      onClick={() => onNavigate('terminal', h.asset)}
-                                      className="bg-white hover:bg-slate-200 text-black px-2.5 py-1.5 rounded text-xs font-semibold transition"
-                                    >
-                                      Manage
-                                    </button>
-                                  )}
-                                </div>
-                              </td>
+                    <div className="glass-panel rounded-2xl overflow-hidden shadow-xl border border-white/[0.08]">
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left text-xs">
+                          <thead className="bg-[#090C10]/90 text-slate-400 font-mono uppercase text-[10px] border-b border-white/[0.06]">
+                            <tr>
+                              <th className="py-3 px-4">Position Asset</th>
+                              <th className="py-3 px-4">Tokens Held</th>
+                              <th className="py-3 px-4">Oracle NAV</th>
+                              <th className="py-3 px-4">Current Value ($ USD)</th>
+                              <th className="py-3 px-4">24h Change</th>
+                              <th className="py-3 px-4 text-right">Actions</th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                          </thead>
+                          <tbody className="divide-y divide-white/[0.04]">
+                            {holdingsList.map((h) => (
+                              <tr key={h.symbol} className="hover:bg-white/[0.02] transition">
+                                
+                                {/* Position Asset */}
+                                <td className="py-3.5 px-4">
+                                  <div className="flex items-center space-x-3">
+                                    <TokenLogo 
+                                      symbol={h.symbol} 
+                                      iconColor={h.asset?.iconColor} 
+                                      size="sm" 
+                                      rounded="md" 
+                                    />
+                                    <div>
+                                      <div className="font-bold text-white font-mono flex items-center gap-1.5 text-xs">
+                                        <span>{h.symbol}</span>
+                                        {h.asset && (
+                                          <span className={`px-1.5 py-0.2 rounded text-[10px] font-bold ${
+                                            h.asset.isShort 
+                                              ? 'bg-red-500/10 text-red-400 border border-red-500/20' 
+                                              : 'bg-rh-green/10 text-rh-green border border-rh-green/20'
+                                          }`}>
+                                            {h.asset.isShort ? '▼' : '▲'} {Math.abs(h.asset.leverage)}x
+                                          </span>
+                                        )}
+                                      </div>
+                                      <span className="text-[10px] text-slate-400 font-sans">
+                                        {h.asset?.name || 'Synthetic Position'}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </td>
+
+                                {/* Balance */}
+                                <td className="py-3.5 px-4 font-mono">
+                                  <span className="font-bold text-white">{h.qty.toLocaleString()}</span>
+                                  <span className="text-slate-500 text-[10px] block font-sans">tokens in wallet</span>
+                                </td>
+
+                                {/* Oracle NAV */}
+                                <td className="py-3.5 px-4 font-mono">
+                                  <span className="text-slate-300 font-semibold">${h.nav.toFixed(2)}</span>
+                                  <span className="text-[10px] text-slate-500 block font-sans">1 {h.symbol}</span>
+                                </td>
+
+                                {/* Current Value */}
+                                <td className="py-3.5 px-4 font-mono">
+                                  <div className="text-white font-bold text-sm">
+                                    ${h.usdValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                  </div>
+                                  <span className="text-[10px] text-slate-500 font-sans">
+                                    {totalNetWorth > 0 ? ((h.usdValue / totalNetWorth) * 100).toFixed(1) : 0}% of portfolio
+                                  </span>
+                                </td>
+
+                                {/* 24h Change */}
+                                <td className="py-3.5 px-4 font-mono">
+                                  <span className={`font-semibold flex items-center gap-0.5 ${h.change24h >= 0 ? 'text-rh-green' : 'text-red-400'}`}>
+                                    {h.change24h >= 0 ? <ArrowUpRight className="w-3.5 h-3.5" /> : <ArrowDownRight className="w-3.5 h-3.5" />}
+                                    <span>{h.change24h >= 0 ? '+' : ''}{h.change24h.toFixed(2)}%</span>
+                                  </span>
+                                </td>
+
+                                {/* Actions */}
+                                <td className="py-3.5 px-4 text-right">
+                                  <div className="flex items-center justify-end gap-1.5 font-sans">
+                                    {/* Direct Uniswap Sell for ETH Link */}
+                                    {(h.asset?.tokenAddress || h.asset?.poolAddress) && (
+                                      <a
+                                        href={getUniswapSellUrl(h.asset?.tokenAddress)}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="bg-pink-500/15 hover:bg-pink-500/25 text-pink-300 hover:text-pink-200 border border-pink-500/30 px-2.5 py-1.5 rounded text-xs font-semibold transition inline-flex items-center gap-1 cursor-pointer shadow-sm"
+                                        title={`Sell ${h.symbol} for regular ETH on Uniswap`}
+                                      >
+                                        <img src="/logos/uni.png" alt="Uniswap" className="w-3 h-3 rounded-full" />
+                                        <span>Sell for ETH</span>
+                                        <ExternalLink className="w-2.5 h-2.5 opacity-70" />
+                                      </a>
+                                    )}
+
+                                    {/* In-App Oracle NAV Redeem Button */}
+                                    {h.asset && (
+                                      <button
+                                        onClick={() => onMintAsset(h.asset!, 'redeem')}
+                                        className="bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 hover:text-emerald-300 border border-emerald-500/30 px-2.5 py-1.5 rounded text-xs font-semibold transition inline-flex items-center gap-1 cursor-pointer"
+                                        title={`Redeem ${h.symbol} at live Oracle NAV without AMM slippage`}
+                                      >
+                                        <ArrowDownLeft className="w-3 h-3" />
+                                        <span>Redeem</span>
+                                      </button>
+                                    )}
+
+                                    {/* Seed Pool */}
+                                    {h.asset && (
+                                      <button
+                                        onClick={() => onSeedPool(h.asset!)}
+                                        className="bg-white/[0.06] hover:bg-white/[0.12] text-slate-200 px-2 py-1.5 rounded text-xs font-semibold transition flex items-center gap-1"
+                                        title="Seed Uniswap Pool"
+                                      >
+                                        <Droplets className="w-3 h-3 text-rh-green" />
+                                        <span>LP</span>
+                                      </button>
+                                    )}
+
+                                    {/* Terminal / Trade */}
+                                    {h.asset && (
+                                      <button
+                                        onClick={() => onNavigate('terminal', h.asset)}
+                                        className="bg-white hover:bg-slate-200 text-black px-2.5 py-1.5 rounded text-xs font-semibold transition"
+                                      >
+                                        Manage
+                                      </button>
+                                    )}
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
                     </div>
                   </div>
                 )}

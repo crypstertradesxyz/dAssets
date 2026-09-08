@@ -41,6 +41,12 @@ export const App: React.FC = () => {
     initialRoute.asset || INITIAL_ASSETS.find(a => a.symbol === 'dBTC3L') || INITIAL_ASSETS[0]
   );
   const [mintAsset, setMintAsset] = useState<LeveragedAsset | null>(null);
+  const [mintModalTab, setMintModalTab] = useState<'mint' | 'redeem'>('mint');
+
+  const handleOpenMint = (asset: LeveragedAsset, initialTab: 'mint' | 'redeem' = 'mint') => {
+    setMintAsset(asset);
+    setMintModalTab(initialTab);
+  };
   const [seedPoolAsset, setSeedPoolAsset] = useState<LeveragedAsset | null>(null);
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
 
@@ -142,7 +148,7 @@ export const App: React.FC = () => {
               assets={assets}
               onExploreMarkets={() => navigateTo('markets')}
               onSelectAsset={handleSelectAsset}
-              onMintAsset={(asset) => setMintAsset(asset)}
+              onMintAsset={handleOpenMint}
               onOpenContracts={() => navigateTo('contracts')}
             />
           </main>
@@ -153,7 +159,7 @@ export const App: React.FC = () => {
             <AssetTable
               assets={assets}
               onSelectAsset={handleSelectAsset}
-              onMintAsset={(asset) => setMintAsset(asset)}
+              onMintAsset={handleOpenMint}
               onSeedPool={(asset) => setSeedPoolAsset(asset)}
             />
           </main>
@@ -165,7 +171,7 @@ export const App: React.FC = () => {
               assets={assets}
               wallet={wallet}
               onOpenWalletModal={() => setIsWalletModalOpen(true)}
-              onMintAsset={(asset) => setMintAsset(asset)}
+              onMintAsset={handleOpenMint}
             />
           </main>
         )}
@@ -176,7 +182,7 @@ export const App: React.FC = () => {
               assets={assets}
               wallet={wallet}
               onOpenWalletModal={() => setIsWalletModalOpen(true)}
-              onMintAsset={(asset) => setMintAsset(asset)}
+              onMintAsset={handleOpenMint}
               onSeedPool={(asset) => setSeedPoolAsset(asset)}
               onNavigate={navigateTo}
             />
@@ -188,7 +194,7 @@ export const App: React.FC = () => {
             <OracleTerminal
               asset={selectedAsset}
               wallet={wallet}
-              onMintAsset={(asset) => setMintAsset(asset)}
+              onMintAsset={handleOpenMint}
               onSeedPool={(asset) => setSeedPoolAsset(asset)}
               allAssets={assets}
               onSelectAsset={handleSelectAsset}
@@ -220,6 +226,7 @@ export const App: React.FC = () => {
           onClose={() => setMintAsset(null)}
           onOpenSeedPool={(asset) => setSeedPoolAsset(asset)}
           onOpenWalletModal={() => setIsWalletModalOpen(true)}
+          initialTab={mintModalTab}
         />
       )}
 

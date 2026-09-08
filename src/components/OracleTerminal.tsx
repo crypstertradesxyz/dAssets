@@ -5,19 +5,20 @@ import {
   Droplets, 
   Clock, 
   ExternalLink,
-  Activity
+  Activity,
+  ArrowDownLeft
 } from 'lucide-react';
 import { LeveragedAsset, WalletState } from '../types';
 import { OracleService } from '../services/oracle';
 import { CopyButton } from './CopyButton';
 import { KeeperTerminal } from './KeeperTerminal';
 import { TokenLogo } from './TokenLogo';
-import { getUniswapSwapUrl } from '../utils/uniswap';
+import { getUniswapSwapUrl, getUniswapSellUrl } from '../utils/uniswap';
 
 interface OracleTerminalProps {
   asset: LeveragedAsset;
   wallet: WalletState;
-  onMintAsset: (asset: LeveragedAsset) => void;
+  onMintAsset: (asset: LeveragedAsset, initialTab?: 'mint' | 'redeem') => void;
   onSeedPool: (asset: LeveragedAsset) => void;
   allAssets: LeveragedAsset[];
   onSelectAsset: (asset: LeveragedAsset) => void;
@@ -33,6 +34,7 @@ export const OracleTerminal: React.FC<OracleTerminalProps> = ({
 }) => {
   const [timeframe, setTimeframe] = useState<'1H' | '24H' | '7D'>('24H');
   const [countdown, setCountdown] = useState({ hours: 0, minutes: 0, seconds: 0 });
+  const userHolding = wallet.holdings?.[asset.symbol] || 0;
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -174,27 +176,55 @@ export const OracleTerminal: React.FC<OracleTerminalProps> = ({
               </div>
             </div>
 
-            <div className="flex items-center gap-2 font-sans">
+            <div className="flex flex-wrap items-center gap-2 font-sans">
+              {userHolding > 0 && (
+                <div className="bg-rh-green/10 border border-rh-green/20 px-3 py-1.5 rounded-md flex items-center gap-2 text-xs font-mono">
+                  <span className="text-slate-400">Holding:</span>
+                  <span className="text-white font-bold">{userHolding.toLocaleString()} {asset.symbol}</span>
+                </div>
+              )}
+
+              {/* Mint */}
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                onClick={() => onMintAsset(asset)}
-                className="flex items-center gap-1.5 bg-white hover:bg-slate-200 text-black font-semibold px-4 py-2.5 rounded-md text-xs transition shadow-sm"
+                onClick={() => onMintAsset(asset, 'mint')}
+                className="flex items-center gap-1.5 bg-white hover:bg-slate-200 text-black font-semibold px-3.5 py-2 rounded-md text-xs transition shadow-sm"
               >
                 <Zap className="w-3.5 h-3.5 fill-current" />
-                <span>Mint {asset.symbol}</span>
+                <span>Mint</span>
               </motion.button>
 
+              {/* Redeem at Oracle NAV */}
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                onClick={() => onSeedPool(asset)}
-                className="flex items-center gap-1.5 bg-white/[0.06] hover:bg-white/[0.12] text-slate-200 px-3.5 py-2.5 rounded-md text-xs font-medium transition"
+                onClick={() => onMintAsset(asset, 'redeem')}
+                className="flex items-center gap-1.5 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 hover:text-emerald-300 border border-emerald-500/30 px-3.5 py-2 rounded-md text-xs font-semibold transition"
+                title="Burn tokens to settle at live Oracle NAV without slippage"
               >
-                <Droplets className="w-3.5 h-3.5 text-rh-green" />
-                <span>Seed Pool</span>
+                <ArrowDownLeft className="w-3.5 h-3.5" />
+                <span>Redeem (NAV)</span>
               </motion.button>
 
+              {/* Sell for ETH on Uniswap */}
+              {(asset.tokenAddress || asset.poolAddress) && (
+                <motion.a
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  href={getUniswapSellUrl(asset.tokenAddress)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 bg-pink-500/15 hover:bg-pink-500/25 text-pink-300 hover:text-pink-200 border border-pink-500/30 px-3.5 py-2 rounded-md text-xs font-semibold transition cursor-pointer shadow-sm"
+                  title="Sell back for native Robinhood Chain ETH on Uniswap"
+                >
+                  <img src="/logos/uni.png" alt="Uniswap" className="w-3.5 h-3.5 rounded-full" />
+                  <span>Sell for ETH</span>
+                  <ExternalLink className="w-2.5 h-2.5 opacity-70" />
+                </motion.a>
+              )}
+
+              {/* Buy on Uniswap */}
               {(asset.tokenAddress || asset.poolAddress) && (
                 <motion.a
                   whileHover={{ scale: 1.02 }}
@@ -202,14 +232,25 @@ export const OracleTerminal: React.FC<OracleTerminalProps> = ({
                   href={getUniswapSwapUrl(asset.tokenAddress)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 bg-pink-500/10 hover:bg-pink-500/20 text-pink-400 hover:text-pink-300 border border-pink-500/25 px-3.5 py-2.5 rounded-md text-xs font-medium transition cursor-pointer"
-                  title="Trade on Uniswap (Robinhood Chain)"
+                  className="flex items-center gap-1.5 bg-white/[0.06] hover:bg-white/[0.12] text-slate-300 px-3 py-2 rounded-md text-xs font-medium transition cursor-pointer"
+                  title="Buy on Uniswap"
                 >
-                  <img src="/logos/uni.png" alt="Uniswap" className="w-3.5 h-3.5 rounded-full" />
-                  <span>Trade on Uniswap</span>
-                  <ExternalLink className="w-3 h-3 opacity-70" />
+                  <img src="/logos/uni.png" alt="Uniswap" className="w-3.5 h-3.5 rounded-full opacity-80" />
+                  <span>Trade / Buy</span>
+                  <ExternalLink className="w-2.5 h-2.5 opacity-60" />
                 </motion.a>
               )}
+
+              {/* Seed Pool */}
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => onSeedPool(asset)}
+                className="flex items-center gap-1.5 bg-white/[0.06] hover:bg-white/[0.12] text-slate-300 px-3 py-2 rounded-md text-xs font-medium transition"
+              >
+                <Droplets className="w-3.5 h-3.5 text-rh-green" />
+                <span>Seed LP</span>
+              </motion.button>
             </div>
           </div>
 
