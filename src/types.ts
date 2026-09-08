@@ -42,13 +42,18 @@ export interface BridgeTransaction {
 export interface LiquidityPool {
   poolAddress: string;
   assetSymbol: string;
+  pairedSymbol?: 'USDC' | 'ETH';
   assetAmount: number;
   usdcAmount: number;
   spotPrice: number;
+  feeTier?: '0.05%' | '0.30%' | '1.00%';
   createdAt: number;
   creator: string;
   apr: number;
   volume24h: number;
+  tvlUsd?: number;
+  protocol?: string;
+  txHash?: string;
 }
 
 export interface WalletState {

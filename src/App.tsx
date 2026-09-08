@@ -11,6 +11,7 @@ import { WalletModal } from './components/WalletModal';
 import { Footer } from './components/Footer';
 
 import { LeveragedAsset, WalletState } from './types';
+import { PoolsView } from './components/PoolsView';
 import { INITIAL_ASSETS } from './data/bounceAssets';
 import { OracleService } from './services/oracle';
 import { Web3Service } from './services/web3';
@@ -28,7 +29,7 @@ export const App: React.FC = () => {
     holdings: {},
   });
 
-  const [activeView, setActiveView] = useState<'home' | 'markets' | 'terminal' | 'bridge' | 'contracts'>('home');
+  const [activeView, setActiveView] = useState<'home' | 'markets' | 'pools' | 'terminal' | 'bridge' | 'contracts'>('home');
   const [selectedAsset, setSelectedAsset] = useState<LeveragedAsset>(
     INITIAL_ASSETS.find(a => a.symbol === 'dBTC3L') || INITIAL_ASSETS[0]
   );
@@ -95,6 +96,17 @@ export const App: React.FC = () => {
               onSelectAsset={handleSelectAsset}
               onMintAsset={(asset) => setMintAsset(asset)}
               onSeedPool={(asset) => setSeedPoolAsset(asset)}
+            />
+          </main>
+        )}
+
+        {activeView === 'pools' && (
+          <main>
+            <PoolsView
+              assets={assets}
+              wallet={wallet}
+              onOpenWalletModal={() => setIsWalletModalOpen(true)}
+              onMintAsset={(asset) => setMintAsset(asset)}
             />
           </main>
         )}

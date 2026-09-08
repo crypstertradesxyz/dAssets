@@ -8,8 +8,8 @@ import { WalletState } from '../types';
 interface NavbarProps {
   wallet: WalletState;
   onOpenWalletModal: () => void;
-  activeView: 'home' | 'markets' | 'terminal' | 'bridge' | 'contracts';
-  setActiveView: (view: 'home' | 'markets' | 'terminal' | 'bridge' | 'contracts') => void;
+  activeView: 'home' | 'markets' | 'pools' | 'terminal' | 'bridge' | 'contracts';
+  setActiveView: (view: 'home' | 'markets' | 'pools' | 'terminal' | 'bridge' | 'contracts') => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -28,8 +28,8 @@ export const Navbar: React.FC<NavbarProps> = ({
             className="flex items-center space-x-2 cursor-pointer select-none" 
             onClick={() => setActiveView('home')}
           >
-            <div className="w-7 h-7 rounded bg-white text-black flex items-center justify-center font-black text-xs font-display">
-              dA
+            <div className="w-7 h-7 rounded-lg overflow-hidden border border-white/[0.15] bg-[#050608] flex items-center justify-center shadow-sm">
+              <img src="/logo.jpg" alt="dAssets" className="w-full h-full object-cover" />
             </div>
             <span className="font-bold text-base tracking-tight text-white font-display">dAssets</span>
           </div>
@@ -55,6 +55,19 @@ export const Navbar: React.FC<NavbarProps> = ({
               }`}
             >
               Markets (270+)
+            </button>
+            <button
+              onClick={() => setActiveView('pools')}
+              className={`px-3 py-1.5 rounded-md text-xs font-medium transition flex items-center gap-1.5 ${
+                activeView === 'pools'
+                  ? 'text-white bg-white/[0.08]'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <span>Pools</span>
+              <span className="text-[9px] px-1 py-0.2 rounded bg-pink-500/20 text-pink-400 font-mono font-bold">
+                Uniswap
+              </span>
             </button>
             <button
               onClick={() => setActiveView('terminal')}
