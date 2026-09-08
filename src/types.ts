@@ -27,8 +27,8 @@ export interface LeveragedAsset {
 export interface BridgeTransaction {
   id: string;
   timestamp: number;
-  sourceChain: 'HyperEVM';
-  destChain: 'Robinhood Chain';
+  sourceChain: 'HyperEVM' | 'Robinhood Chain';
+  destChain: 'Robinhood Chain' | 'HyperEVM';
   assetSymbol: string;
   amount: number;
   usdcPaid: number;
@@ -59,4 +59,5 @@ export interface WalletState {
   balanceEth: string;
   balanceUsdc: string;
   isDemo: boolean;
+  holdings: { [symbol: string]: number };
 }

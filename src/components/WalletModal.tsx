@@ -75,6 +75,28 @@ export const WalletModal: React.FC<WalletModalProps> = ({ wallet, onClose }) => 
                 </div>
               </div>
 
+              {/* Active Portfolio Positions */}
+              {Object.entries(wallet.holdings || {}).filter(([_, qty]) => qty > 0).length > 0 && (
+                <div className="bg-[#090C10] border border-white/[0.06] rounded-md p-3.5 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-sans font-semibold text-slate-400 uppercase tracking-wider">
+                      Active Positions
+                    </span>
+                    <span className="text-[10px] text-rh-green font-mono">Settled On-Chain</span>
+                  </div>
+                  <div className="space-y-2 pt-1 border-t border-white/[0.04]">
+                    {Object.entries(wallet.holdings || {})
+                      .filter(([_, qty]) => qty > 0)
+                      .map(([symbol, qty]) => (
+                        <div key={symbol} className="flex justify-between items-center text-xs">
+                          <span className="font-bold text-white font-mono">{symbol}</span>
+                          <span className="text-slate-200 font-mono font-medium">{qty.toFixed(2)} tokens</span>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+
               <button
                 onClick={handleDisconnect}
                 className="w-full flex items-center justify-center gap-2 bg-[#090C10] hover:bg-red-500/10 hover:text-red-400 text-slate-300 py-2.5 px-4 rounded-md border border-white/[0.08] transition text-xs font-sans font-medium"

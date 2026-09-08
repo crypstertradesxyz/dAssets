@@ -25,6 +25,7 @@ export const App: React.FC = () => {
     balanceEth: '0.00',
     balanceUsdc: '0.00',
     isDemo: false,
+    holdings: {},
   });
 
   const [activeView, setActiveView] = useState<'home' | 'markets' | 'terminal' | 'bridge' | 'contracts'>('home');
