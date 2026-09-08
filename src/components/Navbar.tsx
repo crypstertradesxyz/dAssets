@@ -29,7 +29,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             onClick={() => setActiveView('home')}
           >
             <div className="w-7 h-7 rounded-lg overflow-hidden border border-white/[0.15] bg-[#050608] flex items-center justify-center shadow-sm">
-              <img src="/logo.jpg" alt="dAssets" className="w-full h-full object-cover" />
+              <img src="/logo.png" alt="dAssets" className="w-full h-full object-cover" />
             </div>
             <span className="font-bold text-base tracking-tight text-white font-display">dAssets</span>
           </div>

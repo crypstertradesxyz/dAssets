@@ -6,7 +6,10 @@ export const Footer: React.FC = () => {
     <footer className="border-t border-zinc-900 bg-[#07090C] text-xs text-zinc-500 py-10 mt-20">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex items-center space-x-3">
-          <span className="font-bold text-white tracking-tight">dAssets</span>
+          <div className="w-5 h-5 rounded-md overflow-hidden border border-white/[0.15] bg-[#050608] flex items-center justify-center">
+            <img src="/logo.png" alt="dAssets" className="w-full h-full object-cover" />
+          </div>
+          <span className="font-bold text-white tracking-tight font-display">dAssets</span>
           <span className="text-zinc-600">•</span>
           <span>Robinhood Chain Mainnet (4663)</span>
         </div>

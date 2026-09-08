@@ -7,7 +7,8 @@ import {
   TrendingUp, 
   TrendingDown,
   ShieldCheck,
-  FileCode
+  FileCode,
+  Download
 } from 'lucide-react';
 import { CopyButton } from './CopyButton';
 import deployedConfig from '../contracts/deployedAddresses.json';
@@ -227,6 +228,35 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
         </section>
 
+        {/* Official Protocol Brand Banner */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+          className="relative rounded-2xl overflow-hidden border border-white/[0.08] bg-[#07090D] shadow-2xl group"
+        >
+          <img 
+            src="/banner.png" 
+            alt="dAssets Protocol Banner" 
+            className="w-full h-auto object-cover max-h-[360px] select-none"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#050608]/80 via-transparent to-transparent pointer-events-none" />
+          <div className="absolute bottom-3 sm:bottom-4 left-4 sm:left-6 right-4 sm:right-6 flex items-center justify-between">
+            <div className="flex items-center space-x-2 text-xs text-slate-300 font-mono">
+              <span className="w-2 h-2 rounded-full bg-rh-green"></span>
+              <span className="text-[11px] sm:text-xs">Official Protocol Identity • Robinhood Chain</span>
+            </div>
+            <a
+              href="/banner.png"
+              download="dAssets_banner_1500x500.png"
+              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white/10 hover:bg-white/20 backdrop-blur-md text-white text-xs font-semibold transition shadow-sm"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>Download 1500×500 Banner</span>
+            </a>
+          </div>
+        </motion.div>
 
         {/* HOW IT WORKS: Human, Direct, Clear */}
         <section className="space-y-6">
