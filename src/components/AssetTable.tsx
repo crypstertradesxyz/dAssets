@@ -456,13 +456,19 @@ export const AssetTable: React.FC<AssetTableProps> = ({
 
                 {/* Card Action Buttons Footer */}
                 <div className="flex items-center gap-2 pt-3 border-t border-white/[0.06] font-sans" onClick={(e) => e.stopPropagation()}>
-                  <button
-                    onClick={() => onSelectAsset(activeToken)}
-                    className="flex-1 bg-white/[0.06] hover:bg-white/[0.14] text-white py-2.5 px-3 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5 border border-white/[0.08]"
+                  <a
+                    href={`/terminal/${activeToken.symbol}`}
+                    onClick={(e) => {
+                      if (!e.metaKey && !e.ctrlKey) {
+                        e.preventDefault();
+                        onSelectAsset(activeToken);
+                      }
+                    }}
+                    className="flex-1 bg-white/[0.06] hover:bg-white/[0.14] text-white py-2.5 px-3 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5 border border-white/[0.08] cursor-pointer"
                   >
                     <Activity className="w-3.5 h-3.5 text-rh-green" />
                     <span>Live Feed</span>
-                  </button>
+                  </a>
                   <button
                     onClick={() => onMintAsset(activeToken)}
                     className="flex-1 bg-white hover:bg-slate-200 text-black py-2.5 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm"
@@ -595,12 +601,18 @@ export const AssetTable: React.FC<AssetTableProps> = ({
                       {/* Actions */}
                       <td className="py-4 px-6 text-right font-sans" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-end gap-2.5">
-                          <button
-                            onClick={() => onSelectAsset(activeToken)}
-                            className="px-3.5 py-1.5 rounded-lg bg-white/[0.06] hover:bg-white/[0.12] text-slate-200 hover:text-white text-xs font-semibold transition border border-white/[0.08]"
+                          <a
+                            href={`/terminal/${activeToken.symbol}`}
+                            onClick={(e) => {
+                              if (!e.metaKey && !e.ctrlKey) {
+                                e.preventDefault();
+                                onSelectAsset(activeToken);
+                              }
+                            }}
+                            className="px-3.5 py-1.5 rounded-lg bg-white/[0.06] hover:bg-white/[0.12] text-slate-200 hover:text-white text-xs font-semibold transition border border-white/[0.08] cursor-pointer"
                           >
                             Feed
-                          </button>
+                          </a>
                           <button
                             onClick={() => onMintAsset(activeToken)}
                             className="px-4 py-1.5 rounded-lg bg-white hover:bg-slate-200 text-black text-xs font-bold transition shadow-sm"

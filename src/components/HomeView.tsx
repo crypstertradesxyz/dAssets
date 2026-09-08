@@ -46,9 +46,15 @@ export const HomeView: React.FC<HomeViewProps> = ({
           {[...marqueeAssets, ...marqueeAssets].map((item, idx) => {
             const isPos = item.change24h >= 0;
             return (
-              <div
+              <a
                 key={`${item.id}-${idx}`}
-                onClick={() => onSelectAsset(item)}
+                href={`/terminal/${item.symbol}`}
+                onClick={(e) => {
+                  if (!e.metaKey && !e.ctrlKey) {
+                    e.preventDefault();
+                    onSelectAsset(item);
+                  }
+                }}
                 className="flex items-center space-x-2.5 cursor-pointer hover:text-white transition px-2 py-0.5 rounded"
               >
                 <TokenLogo underlying={item.underlying} iconColor={item.iconColor} size="xs" />
@@ -58,7 +64,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                   {isPos ? '+' : ''}{item.change24h}%
                 </span>
                 <span className="text-slate-800 ml-4">•</span>
-              </div>
+              </a>
             );
           })}
         </div>
@@ -93,15 +99,21 @@ export const HomeView: React.FC<HomeViewProps> = ({
             </p>
 
             <div className="pt-2 flex flex-wrap items-center gap-3">
-              <motion.button
+              <motion.a
+                href="/markets"
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                onClick={onExploreMarkets}
-                className="flex items-center gap-2 bg-white hover:bg-slate-100 text-black font-semibold text-xs px-5 py-3 rounded-lg transition shadow-sm"
+                onClick={(e) => {
+                  if (!e.metaKey && !e.ctrlKey) {
+                    e.preventDefault();
+                    onExploreMarkets();
+                  }
+                }}
+                className="flex items-center gap-2 bg-white hover:bg-slate-100 text-black font-semibold text-xs px-5 py-3 rounded-lg transition shadow-sm cursor-pointer"
               >
                 <span>Browse 270+ Markets</span>
                 <ArrowRight className="w-3.5 h-3.5" />
-              </motion.button>
+              </motion.a>
 
               <motion.button
                 whileHover={{ scale: 1.02 }}
@@ -113,13 +125,19 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 <span>Mint {activeAsset.symbol}</span>
               </motion.button>
 
-              <button
-                onClick={onOpenContracts}
-                className="flex items-center gap-1.5 text-slate-400 hover:text-white text-xs px-3 py-3 transition font-mono"
+              <a
+                href="/contracts"
+                onClick={(e) => {
+                  if (!e.metaKey && !e.ctrlKey) {
+                    e.preventDefault();
+                    onOpenContracts();
+                  }
+                }}
+                className="flex items-center gap-1.5 text-slate-400 hover:text-white text-xs px-3 py-3 transition font-mono cursor-pointer"
               >
                 <FileCode className="w-3.5 h-3.5 text-slate-400" />
                 <span>Verified Contracts</span>
-              </button>
+              </a>
             </div>
 
             {/* Quick Metrics Bar */}
@@ -277,13 +295,19 @@ export const HomeView: React.FC<HomeViewProps> = ({
               </p>
             </div>
 
-            <button
-              onClick={onExploreMarkets}
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-rh-green hover:text-white transition group self-start sm:self-auto"
+            <a
+              href="/markets"
+              onClick={(e) => {
+                if (!e.metaKey && !e.ctrlKey) {
+                  e.preventDefault();
+                  onExploreMarkets();
+                }
+              }}
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-rh-green hover:text-white transition group self-start sm:self-auto cursor-pointer"
             >
               <span>Explore All 270+ Markets</span>
               <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-            </button>
+            </a>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
@@ -295,10 +319,16 @@ export const HomeView: React.FC<HomeViewProps> = ({
             ].map((item) => {
               const isPos = item.change24h >= 0;
               return (
-                <div
+                <a
                   key={item.symbol}
-                  onClick={() => onSelectAsset(item)}
-                  className="glass-panel glass-panel-hover rounded-2xl p-4.5 space-y-3 cursor-pointer group relative overflow-hidden"
+                  href={`/terminal/${item.symbol}`}
+                  onClick={(e) => {
+                    if (!e.metaKey && !e.ctrlKey) {
+                      e.preventDefault();
+                      onSelectAsset(item);
+                    }
+                  }}
+                  className="block glass-panel glass-panel-hover rounded-2xl p-4.5 space-y-3 cursor-pointer group relative overflow-hidden"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2.5">
@@ -354,7 +384,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                       {item.tokenAddress ? '● Deployed' : '○ Deployable'}
                     </span>
                   </div>
-                </div>
+                </a>
               );
             })}
           </div>

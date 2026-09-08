@@ -1,105 +1,90 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   Wallet, 
-  ChevronDown
+  ChevronDown,
+  Menu,
+  X
 } from 'lucide-react';
-import { WalletState } from '../types';
+import { WalletState, AppView } from '../types';
 
 interface NavbarProps {
   wallet: WalletState;
   onOpenWalletModal: () => void;
-  activeView: 'home' | 'markets' | 'pools' | 'terminal' | 'bridge' | 'contracts';
-  setActiveView: (view: 'home' | 'markets' | 'pools' | 'terminal' | 'bridge' | 'contracts') => void;
+  activeView: AppView;
+  onNavigate: (view: AppView) => void;
+  setActiveView?: (view: AppView) => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
   wallet,
   onOpenWalletModal,
   activeView,
-  setActiveView
+  onNavigate,
+  setActiveView,
 }) => {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const handleNav = (view: AppView, e?: React.MouseEvent) => {
+    if (e && (e.metaKey || e.ctrlKey)) {
+      return; // allow opening in new tab natively
+    }
+    if (e) e.preventDefault();
+    setMobileMenuOpen(false);
+    if (onNavigate) {
+      onNavigate(view);
+    } else if (setActiveView) {
+      setActiveView(view);
+    }
+  };
+
+  const navItems: { view: AppView; label: string; href: string; badge?: string; pulse?: boolean }[] = [
+    { view: 'home', label: 'Overview', href: '/' },
+    { view: 'markets', label: 'Markets (270+)', href: '/markets' },
+    { view: 'pools', label: 'Pools', href: '/pools', badge: 'Uniswap' },
+    { view: 'terminal', label: 'Oracle Feed', href: '/terminal', pulse: true },
+    { view: 'bridge', label: 'Hyperlane', href: '/bridge' },
+    { view: 'contracts', label: 'Contracts', href: '/contracts' },
+  ];
+
   return (
     <header className="border-b border-white/[0.08] bg-[#05070A]/80 backdrop-blur-xl sticky top-0 z-40 shadow-xl shadow-black/40">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
         
         {/* Brand & Main Links */}
-        <div className="flex items-center space-x-8">
-          <div 
-            className="flex items-center space-x-2 cursor-pointer select-none" 
-            onClick={() => setActiveView('home')}
+        <div className="flex items-center space-x-6 lg:space-x-8">
+          <a 
+            href="/"
+            onClick={(e) => handleNav('home', e)}
+            className="flex items-center space-x-2 cursor-pointer select-none group" 
           >
-            <div className="w-7 h-7 rounded-lg overflow-hidden border border-white/[0.15] bg-[#050608] flex items-center justify-center shadow-sm">
+            <div className="w-7 h-7 rounded-lg overflow-hidden border border-white/[0.15] bg-[#050608] flex items-center justify-center shadow-sm group-hover:border-rh-green/50 transition">
               <img src="/logo.png" alt="dAssets" className="w-full h-full object-cover" />
             </div>
             <span className="font-bold text-base tracking-tight text-white font-display">dAssets</span>
-          </div>
+          </a>
 
-          {/* Navigation Links */}
+          {/* Desktop Navigation Links */}
           <nav className="hidden sm:flex items-center space-x-1">
-            <button
-              onClick={() => setActiveView('home')}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium transition ${
-                activeView === 'home'
-                  ? 'text-white bg-white/[0.08]'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              Overview
-            </button>
-            <button
-              onClick={() => setActiveView('markets')}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium transition ${
-                activeView === 'markets'
-                  ? 'text-white bg-white/[0.08]'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              Markets (270+)
-            </button>
-            <button
-              onClick={() => setActiveView('pools')}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium transition flex items-center gap-1.5 ${
-                activeView === 'pools'
-                  ? 'text-white bg-white/[0.08]'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              <span>Pools</span>
-              <span className="text-[9px] px-1 py-0.2 rounded bg-pink-500/20 text-pink-400 font-mono font-bold">
-                Uniswap
-              </span>
-            </button>
-            <button
-              onClick={() => setActiveView('terminal')}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium transition flex items-center gap-1.5 ${
-                activeView === 'terminal'
-                  ? 'text-white bg-white/[0.08]'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-rh-green animate-pulse" />
-              <span>Oracle Feed</span>
-            </button>
-            <button
-              onClick={() => setActiveView('bridge')}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium transition ${
-                activeView === 'bridge'
-                  ? 'text-white bg-white/[0.08]'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              Hyperlane
-            </button>
-            <button
-              onClick={() => setActiveView('contracts')}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium transition ${
-                activeView === 'contracts'
-                  ? 'text-white bg-white/[0.08]'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              Contracts
-            </button>
+            {navItems.map((item) => (
+              <a
+                key={item.view}
+                href={item.href}
+                onClick={(e) => handleNav(item.view, e)}
+                className={`px-3 py-1.5 rounded-md text-xs font-medium transition flex items-center gap-1.5 ${
+                  activeView === item.view
+                    ? 'text-white bg-white/[0.08]'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                {item.pulse && <span className="w-1.5 h-1.5 rounded-full bg-rh-green animate-pulse" />}
+                <span>{item.label}</span>
+                {item.badge && (
+                  <span className="text-[9px] px-1 py-0.2 rounded bg-pink-500/20 text-pink-400 font-mono font-bold">
+                    {item.badge}
+                  </span>
+                )}
+              </a>
+            ))}
           </nav>
         </div>
 
@@ -150,9 +135,53 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
           )}
 
+          {/* Mobile Menu Toggle Button */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="sm:hidden p-2 rounded-md bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 hover:text-white transition border border-white/[0.06]"
+            aria-label="Toggle Navigation Menu"
+          >
+            {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+          </button>
+
         </div>
 
       </div>
+
+      {/* Mobile Menu Dropdown */}
+      {mobileMenuOpen && (
+        <div className="sm:hidden border-t border-white/[0.08] bg-[#06080C]/95 backdrop-blur-2xl px-4 py-3 space-y-1 shadow-2xl">
+          {navItems.map((item) => (
+            <a
+              key={item.view}
+              href={item.href}
+              onClick={(e) => handleNav(item.view, e)}
+              className={`block px-3 py-2 rounded-lg text-sm font-medium transition flex items-center justify-between ${
+                activeView === item.view
+                  ? 'text-white bg-white/[0.10]'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                {item.pulse && <span className="w-1.5 h-1.5 rounded-full bg-rh-green animate-pulse" />}
+                <span>{item.label}</span>
+              </div>
+              {item.badge && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-pink-500/20 text-pink-400 font-mono font-bold">
+                  {item.badge}
+                </span>
+              )}
+            </a>
+          ))}
+          <div className="pt-2 border-t border-white/[0.06] flex items-center justify-between text-xs text-slate-400 font-mono">
+            <span>Network:</span>
+            <span className="text-rh-green flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-rh-green"></span>
+              Robinhood Mainnet (4663)
+            </span>
+          </div>
+        </div>
+      )}
     </header>
   );
 };

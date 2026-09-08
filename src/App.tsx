@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Navbar } from './components/Navbar';
 import { HomeView } from './components/HomeView';
 import { AssetTable } from './components/AssetTable';
@@ -10,11 +10,12 @@ import { CreatePoolModal } from './components/CreatePoolModal';
 import { WalletModal } from './components/WalletModal';
 import { Footer } from './components/Footer';
 
-import { LeveragedAsset, WalletState } from './types';
+import { LeveragedAsset, WalletState, AppView } from './types';
 import { PoolsView } from './components/PoolsView';
 import { INITIAL_ASSETS } from './data/bounceAssets';
 import { OracleService } from './services/oracle';
 import { Web3Service } from './services/web3';
+import { parseCurrentUrl, getUrlForView, updatePageMetadata } from './utils/navigation';
 
 export const App: React.FC = () => {
   const [assets, setAssets] = useState<LeveragedAsset[]>(INITIAL_ASSETS);
@@ -29,14 +30,57 @@ export const App: React.FC = () => {
     holdings: {},
   });
 
-  const [activeView, setActiveView] = useState<'home' | 'markets' | 'pools' | 'terminal' | 'bridge' | 'contracts'>('home');
+  // Resolve initial route from browser URL
+  const initialRoute = typeof window !== 'undefined'
+    ? parseCurrentUrl(window.location.pathname, window.location.search, INITIAL_ASSETS)
+    : { view: 'home' as AppView };
+
+  const [activeView, setActiveView] = useState<AppView>(initialRoute.view);
   const [selectedAsset, setSelectedAsset] = useState<LeveragedAsset>(
-    INITIAL_ASSETS.find(a => a.symbol === 'dBTC3L') || INITIAL_ASSETS[0]
+    initialRoute.asset || INITIAL_ASSETS.find(a => a.symbol === 'dBTC3L') || INITIAL_ASSETS[0]
   );
   const [mintAsset, setMintAsset] = useState<LeveragedAsset | null>(null);
   const [seedPoolAsset, setSeedPoolAsset] = useState<LeveragedAsset | null>(null);
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
 
+  // Central client navigation function
+  const navigateTo = useCallback((view: AppView, asset?: LeveragedAsset, replace = false) => {
+    setActiveView(view);
+    const targetAsset = asset || (view === 'terminal' ? selectedAsset : undefined);
+    if (asset) {
+      setSelectedAsset(asset);
+    }
+    const url = getUrlForView(view, targetAsset?.symbol);
+    if (replace) {
+      window.history.replaceState({ view, symbol: targetAsset?.symbol }, '', url);
+    } else {
+      window.history.pushState({ view, symbol: targetAsset?.symbol }, '', url);
+    }
+    updatePageMetadata(view, targetAsset || selectedAsset);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [selectedAsset]);
+
+  // Handle browser Back / Forward history events
+  useEffect(() => {
+    const handlePopState = () => {
+      const parsed = parseCurrentUrl(window.location.pathname, window.location.search, assets);
+      setActiveView(parsed.view);
+      if (parsed.asset) {
+        setSelectedAsset(parsed.asset);
+      }
+      updatePageMetadata(parsed.view, parsed.asset || selectedAsset);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [assets, selectedAsset]);
+
+  // Sync initial metadata
+  useEffect(() => {
+    updatePageMetadata(activeView, selectedAsset);
+  }, [activeView, selectedAsset]);
+
+  // Oracle & Web3 initialization
   useEffect(() => {
     const oracle = OracleService.getInstance();
     oracle.init(INITIAL_ASSETS);
@@ -55,25 +99,19 @@ export const App: React.FC = () => {
   }, []);
 
   const handleSelectAsset = (asset: LeveragedAsset) => {
-    setSelectedAsset(asset);
-    setActiveView('terminal');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const handleOpenMintdBTC3L = () => {
-    const btc = assets.find(a => a.symbol === 'dBTC3L') || assets[0];
-    setMintAsset(btc);
+    navigateTo('terminal', asset);
   };
 
   return (
     <div className="min-h-screen bg-forged-carbon text-zinc-100 flex flex-col justify-between selection:bg-rh-green selection:text-black relative">
       <div>
-        {/* Clean Single Navbar */}
+        {/* Clean Single Navbar with real links and routing */}
         <Navbar
           wallet={wallet}
           onOpenWalletModal={() => setIsWalletModalOpen(true)}
           activeView={activeView}
-          setActiveView={setActiveView}
+          onNavigate={navigateTo}
+          setActiveView={(v) => navigateTo(v)}
         />
 
         {/* View Routing */}
@@ -81,10 +119,10 @@ export const App: React.FC = () => {
           <main>
             <HomeView
               assets={assets}
-              onExploreMarkets={() => setActiveView('markets')}
+              onExploreMarkets={() => navigateTo('markets')}
               onSelectAsset={handleSelectAsset}
               onMintAsset={(asset) => setMintAsset(asset)}
-              onOpenContracts={() => setActiveView('contracts')}
+              onOpenContracts={() => navigateTo('contracts')}
             />
           </main>
         )}
@@ -138,7 +176,7 @@ export const App: React.FC = () => {
       </div>
 
       {/* Footer */}
-      <Footer />
+      <Footer onNavigate={navigateTo} />
 
       {/* Modals */}
       {mintAsset && (

@@ -1,4 +1,5 @@
 export type AssetCategory = 'all' | 'majors' | 'layer1' | 'defi' | 'ai' | 'meme';
+export type AppView = 'home' | 'markets' | 'pools' | 'terminal' | 'bridge' | 'contracts';
 
 export interface LeveragedAsset {
   id: string;
