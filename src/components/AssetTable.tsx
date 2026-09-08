@@ -1,8 +1,7 @@
 import React, { useState, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Search, 
-  TrendingUp, 
-  TrendingDown, 
   ArrowUpDown,
   ExternalLink
 } from 'lucide-react';
@@ -71,7 +70,12 @@ export const AssetTable: React.FC<AssetTableProps> = ({
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-6">
+    <motion.div 
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+      className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-6"
+    >
       
       {/* Header & Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -95,21 +99,31 @@ export const AssetTable: React.FC<AssetTableProps> = ({
         </div>
       </div>
 
-      {/* Category Tabs */}
+      {/* Category Tabs with Animated Indicator */}
       <div className="flex items-center space-x-1 border-b border-white/[0.06] pb-3 overflow-x-auto text-xs">
-        {categories.map((cat) => (
-          <button
-            key={cat.key}
-            onClick={() => setSelectedCategory(cat.key)}
-            className={`px-3 py-1.5 rounded-md font-medium transition whitespace-nowrap ${
-              selectedCategory === cat.key
-                ? 'bg-white/[0.08] text-white'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            {cat.label}
-          </button>
-        ))}
+        {categories.map((cat) => {
+          const isSelected = selectedCategory === cat.key;
+          return (
+            <button
+              key={cat.key}
+              onClick={() => setSelectedCategory(cat.key)}
+              className={`relative px-3 py-1.5 rounded-md font-medium transition whitespace-nowrap ${
+                isSelected
+                  ? 'text-white'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              {isSelected && (
+                <motion.div
+                  layoutId="activeCategoryTab"
+                  className="absolute inset-0 bg-white/[0.08] rounded-md -z-10"
+                  transition={{ type: 'spring', bounce: 0.2, duration: 0.4 }}
+                />
+              )}
+              {cat.label}
+            </button>
+          );
+        })}
       </div>
 
       {/* High-Craft Table */}
@@ -153,7 +167,7 @@ export const AssetTable: React.FC<AssetTableProps> = ({
                 return (
                   <tr
                     key={asset.id}
-                    className="hover:bg-white/[0.02] transition cursor-pointer"
+                    className="hover:bg-white/[0.025] transition-colors duration-150 cursor-pointer"
                     onClick={() => onSelectAsset(asset)}
                   >
                     {/* Asset Name */}
@@ -229,18 +243,22 @@ export const AssetTable: React.FC<AssetTableProps> = ({
                     {/* Action Buttons */}
                     <td className="py-3.5 px-4 text-right" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-end gap-2 font-sans">
-                        <button
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
                           onClick={() => onMintAsset(asset)}
-                          className="px-3 py-1 rounded bg-white hover:bg-slate-200 text-black text-xs font-semibold transition active:scale-95"
+                          className="px-3 py-1 rounded bg-white hover:bg-slate-200 text-black text-xs font-semibold transition shadow-sm"
                         >
                           Mint
-                        </button>
-                        <button
+                        </motion.button>
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
                           onClick={() => onSeedPool(asset)}
                           className="px-2.5 py-1 rounded hover:bg-white/[0.06] text-slate-400 hover:text-white text-xs transition"
                         >
                           Seed LP
-                        </button>
+                        </motion.button>
                       </div>
                     </td>
                   </tr>
@@ -257,6 +275,6 @@ export const AssetTable: React.FC<AssetTableProps> = ({
         )}
       </div>
 
-    </div>
+    </motion.div>
   );
 };

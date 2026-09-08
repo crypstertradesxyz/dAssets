@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { motion } from 'framer-motion';
 import { 
   Zap, 
   Droplets, 
@@ -69,7 +70,12 @@ export const OracleTerminal: React.FC<OracleTerminalProps> = ({
   const ammPrice = Number((asset.currentNav * (1 + ammSpread / 100)).toFixed(2));
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+    <motion.div 
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+      className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6"
+    >
       
       {/* Top Banner: Asset Summary */}
       <div className="bg-[#0A0D12] border border-white/[0.08] rounded-lg p-6">
@@ -134,21 +140,25 @@ export const OracleTerminal: React.FC<OracleTerminalProps> = ({
             </div>
 
             <div className="flex items-center gap-2 font-sans">
-              <button
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
                 onClick={() => onMintAsset(asset)}
-                className="flex items-center gap-1.5 bg-white hover:bg-slate-200 text-black font-semibold px-4 py-2 rounded-md text-xs transition active:scale-95 shadow-sm"
+                className="flex items-center gap-1.5 bg-white hover:bg-slate-200 text-black font-semibold px-4 py-2 rounded-md text-xs transition shadow-sm"
               >
                 <Zap className="w-3.5 h-3.5 fill-current" />
                 <span>Mint {asset.symbol}</span>
-              </button>
+              </motion.button>
 
-              <button
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
                 onClick={() => onSeedPool(asset)}
                 className="flex items-center gap-1.5 bg-white/[0.06] hover:bg-white/[0.12] text-slate-200 px-3.5 py-2 rounded-md text-xs font-medium transition"
               >
                 <Droplets className="w-3.5 h-3.5 text-slate-400" />
                 <span>Seed Pool</span>
-              </button>
+              </motion.button>
             </div>
           </div>
 
@@ -314,6 +324,6 @@ export const OracleTerminal: React.FC<OracleTerminalProps> = ({
         </div>
 
       </div>
-    </div>
+    </motion.div>
   );
 };
