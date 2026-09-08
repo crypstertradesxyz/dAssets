@@ -233,6 +233,108 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
         </section>
 
+        {/* Featured & Trending Markets Spotlight */}
+        <section className="space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/[0.08] pb-3">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-rh-green animate-pulse" />
+                <h2 className="text-base font-bold text-white font-display">
+                  Featured & Trending Leveraged Markets
+                </h2>
+              </div>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Multi-tier constant exposure tokens backed by autonomous on-chain rebalancing.
+              </p>
+            </div>
+
+            <button
+              onClick={onExploreMarkets}
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-rh-green hover:text-white transition group self-start sm:self-auto"
+            >
+              <span>Explore All 270+ Markets</span>
+              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+            {[
+              assets.find(a => a.symbol === 'dBTC3L') || assets[0],
+              assets.find(a => a.symbol === 'dETH3L') || assets[1],
+              assets.find(a => a.symbol === 'dSOL5L') || assets[2],
+              assets.find(a => a.symbol === 'dBTC3S') || assets[3],
+            ].map((item) => {
+              const isPos = item.change24h >= 0;
+              return (
+                <div
+                  key={item.symbol}
+                  onClick={() => onSelectAsset(item)}
+                  className="glass-panel glass-panel-hover rounded-2xl p-4.5 space-y-3 cursor-pointer group relative overflow-hidden"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2.5">
+                      <div 
+                        className="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs"
+                        style={{
+                          backgroundColor: `${item.iconColor}20`,
+                          color: item.iconColor,
+                          border: `1px solid ${item.iconColor}40`,
+                        }}
+                      >
+                        {item.underlying.slice(0, 3)}
+                      </div>
+                      <div>
+                        <div className="font-bold text-white text-sm font-display group-hover:text-rh-green transition-colors">
+                          {item.symbol}
+                        </div>
+                        <div className="text-[11px] text-slate-400 font-sans">
+                          {item.underlyingName}
+                        </div>
+                      </div>
+                    </div>
+
+                    <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full ${
+                      item.isShort
+                        ? 'bg-red-500/10 text-red-400 border border-red-500/30'
+                        : 'bg-rh-green/10 text-rh-green border border-rh-green/30'
+                    }`}>
+                      {item.isShort ? '▼' : '▲'} {Math.abs(item.leverage)}x {item.isShort ? 'Short' : 'Long'}
+                    </span>
+                  </div>
+
+                  {/* NAV & 24h Change */}
+                  <div className="flex items-baseline justify-between pt-1">
+                    <div>
+                      <div className="text-[10px] text-slate-400 font-sans uppercase">Oracle NAV</div>
+                      <div className="text-xl font-bold text-white font-mono mt-0.5">
+                        ${item.currentNav.toFixed(2)}
+                      </div>
+                    </div>
+
+                    <div className="text-right">
+                      <div className="text-[10px] text-slate-400 font-sans uppercase">24h Change</div>
+                      <div className={`text-xs font-bold font-mono inline-flex items-center gap-0.5 mt-0.5 ${
+                        isPos ? 'text-rh-green' : 'text-red-400'
+                      }`}>
+                        {isPos ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                        <span>{isPos ? '+' : ''}{item.change24h}%</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Spot Benchmark & Robinhood Badge */}
+                  <div className="pt-2 border-t border-white/[0.06] flex items-center justify-between text-[11px] font-mono text-slate-400">
+                    <span>Spot: <strong className="text-slate-200">${item.indexPrice.toLocaleString()}</strong></span>
+                    <span className={item.tokenAddress ? 'text-rh-green' : 'text-slate-500'}>
+                      {item.tokenAddress ? '● Deployed' : '○ Deployable'}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
         {/* Official Protocol Brand Banner */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
