@@ -100,8 +100,8 @@ export async function mintGenuineOnChain(
     name,
     symbol,
     underlying,
-    Math.abs(leverage),
-    isShort,
+    Math.round(Math.abs(leverage)),
+    Boolean(isShort),
     hyperevmId,
     amountWei
   ]);
@@ -134,9 +134,25 @@ export async function mintGenuineOnChain(
   try {
     const factory = new ethers.Contract(factoryAddress, artifacts.dAssetFactory.abi, provider);
     const assetInfo = await factory.getAsset(symbol);
-    tokenAddress = assetInfo.tokenAddress;
+    if (assetInfo && assetInfo.tokenAddress && assetInfo.tokenAddress !== ethers.ZeroAddress) {
+      tokenAddress = assetInfo.tokenAddress;
+    }
   } catch (readErr) {
-    console.warn('Could not read asset token address from factory registry:', readErr);
+    console.warn('Could not read asset token address from provider factory registry:', readErr);
+  }
+
+  // If not yet available on BrowserProvider, query public RPC provider
+  if (!tokenAddress) {
+    try {
+      const publicRpc = new ethers.JsonRpcProvider('https://rpc.mainnet.chain.robinhood.com');
+      const factory = new ethers.Contract(factoryAddress, artifacts.dAssetFactory.abi, publicRpc);
+      const assetInfo = await factory.getAsset(symbol);
+      if (assetInfo && assetInfo.tokenAddress && assetInfo.tokenAddress !== ethers.ZeroAddress) {
+        tokenAddress = assetInfo.tokenAddress;
+      }
+    } catch (rpcErr) {
+      console.warn('Could not read asset token address from public RPC factory registry:', rpcErr);
+    }
   }
 
   if (tokenAddress) {

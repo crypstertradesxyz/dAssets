@@ -109,13 +109,16 @@ export const MintModal: React.FC<MintModalProps> = ({
           asset.symbol,
           asset.name,
           asset.underlying,
-          asset.leverage,
-          asset.isShort,
+          Math.round(Math.abs(asset.leverage)),
+          Boolean(asset.isShort),
           asset.hyperevmAddress,
           amountNumber
         );
 
-        const assignedAddress = onChainResult.tokenAddress || asset.tokenAddress || '0x5164E1dc1Be45a0Fbe4D6A25A4713225E9bb56F6';
+        const assignedAddress = onChainResult.tokenAddress || 
+                                asset.tokenAddress || 
+                                (await OracleService.getInstance().lookupOnChainAsset(asset.symbol)) || 
+                                '';
         setActiveTokenAddress(assignedAddress);
 
         const realTx: BridgeTransaction = {
@@ -154,7 +157,12 @@ export const MintModal: React.FC<MintModalProps> = ({
         const provider = new ethers.BrowserProvider(eth);
         const signer = await provider.getSigner();
         const userAddress = await signer.getAddress();
-        const targetAddress = activeTokenAddress || asset.tokenAddress || '0x5164E1dc1Be45a0Fbe4D6A25A4713225E9bb56F6';
+        const targetAddress = activeTokenAddress || 
+                              asset.tokenAddress || 
+                              (await OracleService.getInstance().lookupOnChainAsset(asset.symbol));
+        if (!targetAddress) {
+          throw new Error(`On-chain contract address for ${asset.symbol} could not be resolved.`);
+        }
 
         const erc20Iface = new ethers.Interface([
           'function transfer(address to, uint256 amount) returns (bool)'

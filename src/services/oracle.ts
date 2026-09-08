@@ -135,8 +135,10 @@ export class OracleService {
         const underlying24hChange = live.change24h;
 
         // Mathematical Leveraged Token NAV Formula:
-        // Leveraged 24h % Return = Underlying 24h % Return * Leverage
-        const leveragedChangePercent = Number((underlying24hChange * asset.leverage).toFixed(2));
+        // Long: Returns = Spot% * Leverage
+        // Short: Returns = -Spot% * |Leverage| (Inverse)
+        const effectiveLeverage = asset.isShort ? -Math.abs(asset.leverage) : Math.abs(asset.leverage);
+        const leveragedChangePercent = Number((underlying24hChange * effectiveLeverage).toFixed(2));
         
         // Base NAV $1.00 scaled by leveraged percentage move
         const newNav = Math.max(0.01, Number((asset.baseNav * (1 + leveragedChangePercent / 100)).toFixed(2)));
@@ -231,6 +233,34 @@ export class OracleService {
               };
               hasChanges = true;
             }
+          } else {
+            // New asset discovered on factory registry
+            const isShort = Boolean(info.isShort);
+            const lev = Number(info.leverage);
+            const newAsset: LeveragedAsset = {
+              id: symbol.toLowerCase(),
+              symbol,
+              name: `${info.underlying} ${lev}x ${isShort ? 'Short' : 'Long'}`,
+              underlying: info.underlying,
+              underlyingName: info.underlying,
+              leverage: isShort ? -lev : lev,
+              isShort,
+              category: 'majors',
+              baseNav: 1.0,
+              currentNav: 1.0,
+              indexPrice: 100,
+              change24h: 0,
+              volume24h: 0,
+              fundingRate: 0,
+              openInterest: 0,
+              isMinted: true,
+              tokenAddress: info.tokenAddress,
+              poolAddress: hasValidPool ? info.poolAddress : undefined,
+              hyperevmAddress: `hyperevm-${symbol.toLowerCase()}`,
+              iconColor: '#00C805',
+            };
+            this.currentAssets.push(newAsset);
+            hasChanges = true;
           }
 
           this.persistAssetToStorage(

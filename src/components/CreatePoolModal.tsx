@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, 
@@ -47,6 +47,7 @@ export const CreatePoolModal: React.FC<CreatePoolModalProps> = ({
   const [feeTier, setFeeTier] = useState<'0.05%' | '0.30%' | '1.00%'>('0.30%');
   const [assetAmount, setAssetAmount] = useState('5');
   const [searchQuery, setSearchQuery] = useState('');
+  const [pickerTab, setPickerTab] = useState<'all' | 'long' | 'short'>('all');
   const [isAssetPickerOpen, setIsAssetPickerOpen] = useState(false);
   const [isDeploying, setIsDeploying] = useState(false);
   const [createdPool, setCreatedPool] = useState<LiquidityPool | null>(null);
@@ -78,11 +79,31 @@ export const CreatePoolModal: React.FC<CreatePoolModalProps> = ({
     return () => { isCancelled = true; };
   }, [selectedAsset.symbol, selectedAsset.tokenAddress]);
 
-  const filteredAssets = assets.filter(
-    a => a.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
-         a.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-         a.underlying.toLowerCase().includes(searchQuery.toLowerCase())
-  ).slice(0, 12);
+  // Sibling assets for the currently selected underlying (e.g. BTC -> dBTC2L, dBTC3L, dBTC5L, dBTC1S, dBTC2S, dBTC3S)
+  const siblingAssets = useMemo(() => {
+    return assets.filter(a => a.underlying === selectedAsset.underlying)
+      .sort((a, b) => {
+        if (a.isShort !== b.isShort) return a.isShort ? 1 : -1;
+        return a.leverage - b.leverage;
+      });
+  }, [assets, selectedAsset.underlying]);
+
+  const filteredAssets = useMemo(() => {
+    return assets.filter(a => {
+      // Direction filter
+      if (pickerTab === 'long' && a.isShort) return false;
+      if (pickerTab === 'short' && !a.isShort) return false;
+
+      // Query filter
+      if (!searchQuery.trim()) return true;
+      const q = searchQuery.toLowerCase();
+      return (
+        a.symbol.toLowerCase().includes(q) ||
+        a.name.toLowerCase().includes(q) ||
+        a.underlying.toLowerCase().includes(q)
+      );
+    }).slice(0, 100);
+  }, [assets, pickerTab, searchQuery]);
 
   const handleSwitchNetwork = async () => {
     setIsSwitchingChain(true);
@@ -415,10 +436,20 @@ export const CreatePoolModal: React.FC<CreatePoolModalProps> = ({
                           iconColor={selectedAsset.iconColor} 
                           size="sm" 
                           rounded="md" 
+                          isShort={selectedAsset.isShort}
+                          leverage={Math.abs(selectedAsset.leverage)}
                         />
                         <div>
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <span className="font-bold text-white font-mono">{selectedAsset.symbol}</span>
+                            <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded font-bold ${
+                              selectedAsset.isShort 
+                                ? 'bg-red-500/15 text-red-400 border border-red-500/30' 
+                                : 'bg-rh-green/15 text-rh-green border border-rh-green/30'
+                            }`}>
+                              {selectedAsset.isShort ? '▼ ' : '▲ '}
+                              {Math.abs(selectedAsset.leverage)}x {selectedAsset.isShort ? 'Short' : 'Long'}
+                            </span>
                             {selectedAsset.tokenAddress ? (
                               <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-rh-green/10 text-rh-green border border-rh-green/20">
                                 Deployed ({selectedAsset.tokenAddress.slice(0, 6)}...{selectedAsset.tokenAddress.slice(-4)})
@@ -435,46 +466,123 @@ export const CreatePoolModal: React.FC<CreatePoolModalProps> = ({
                       <ChevronDown className="w-4 h-4 text-slate-400" />
                     </button>
 
+                    {/* Quick Multiplier & Direction Switcher for selected underlying */}
+                    {siblingAssets.length > 1 && (
+                      <div className="flex items-center gap-1.5 pt-2 overflow-x-auto pb-0.5">
+                        <span className="text-[10px] text-slate-500 font-mono shrink-0">Exposure:</span>
+                        <div className="flex items-center gap-1 flex-wrap">
+                          {siblingAssets.map(sib => {
+                            const isCurrent = sib.symbol === selectedAsset.symbol;
+                            return (
+                              <button
+                                key={sib.symbol}
+                                type="button"
+                                onClick={() => setSelectedAsset(sib)}
+                                className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold transition flex items-center gap-1 ${
+                                  isCurrent
+                                    ? sib.isShort
+                                      ? 'bg-red-500 text-white shadow-sm'
+                                      : 'bg-rh-green text-black shadow-sm'
+                                    : 'bg-white/[0.06] text-slate-300 hover:bg-white/[0.12] border border-white/[0.06]'
+                                }`}
+                              >
+                                <span>{sib.isShort ? `▼ ${Math.abs(sib.leverage)}S` : `▲ ${sib.leverage}L`}</span>
+                                {sib.tokenAddress && (
+                                  <span className="w-1.5 h-1.5 rounded-full bg-current opacity-80" title="Deployed on-chain"></span>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
                     {/* Dropdown list */}
                     {isAssetPickerOpen && (
-                      <div className="absolute left-0 right-0 top-full mt-1 bg-[#090C10] border border-white/[0.12] rounded-md shadow-2xl z-50 p-2 space-y-1.5 max-h-56 overflow-y-auto">
+                      <div className="absolute left-0 right-0 top-full mt-1 bg-[#090C10] border border-white/[0.12] rounded-md shadow-2xl z-50 p-2 space-y-2 max-h-64 overflow-y-auto">
                         <div className="relative">
                           <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500" />
                           <input
                             type="text"
-                            placeholder="Search 270+ assets..."
+                            placeholder="Search by symbol, underlying, 'short', 'long', '3x'..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className="w-full bg-[#0E1218] border border-white/[0.08] rounded py-1.5 pl-8 pr-2 text-xs text-white focus:outline-none"
                             autoFocus
                           />
                         </div>
-                        <div className="space-y-0.5 pt-1">
-                          {filteredAssets.map(asset => (
-                            <div
-                              key={asset.id}
-                              onClick={() => {
-                                setSelectedAsset(asset);
-                                setIsAssetPickerOpen(false);
-                                setSearchQuery('');
-                              }}
-                              className="flex items-center justify-between p-2 rounded hover:bg-white/[0.06] cursor-pointer transition text-xs"
-                            >
-                              <div className="flex items-center space-x-2.5">
-                                <TokenLogo underlying={asset.underlying} iconColor={asset.iconColor} size="xs" rounded="sm" />
-                                <div className="flex items-center gap-1.5">
-                                  <span className="font-mono font-bold text-white">{asset.symbol}</span>
-                                  {asset.tokenAddress && (
-                                    <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-rh-green/10 text-rh-green border border-rh-green/20">
-                                      Deployed
-                                    </span>
-                                  )}
-                                </div>
-                                <span className="text-slate-400 text-[11px]">{asset.underlying}</span>
-                              </div>
-                              <span className="text-slate-300 font-mono">${asset.currentNav.toFixed(2)}</span>
+
+                        {/* Direction Filter Tabs */}
+                        <div className="flex items-center gap-1 border-b border-white/[0.06] pb-1.5 font-mono text-[11px]">
+                          <button
+                            type="button"
+                            onClick={() => setPickerTab('all')}
+                            className={`px-2 py-0.5 rounded transition ${pickerTab === 'all' ? 'bg-white text-black font-bold' : 'text-slate-400 hover:text-white'}`}
+                          >
+                            All ({assets.length})
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setPickerTab('long')}
+                            className={`px-2 py-0.5 rounded transition flex items-center gap-0.5 ${pickerTab === 'long' ? 'bg-rh-green text-black font-bold' : 'text-slate-400 hover:text-white'}`}
+                          >
+                            <span>▲ Longs</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setPickerTab('short')}
+                            className={`px-2 py-0.5 rounded transition flex items-center gap-0.5 ${pickerTab === 'short' ? 'bg-red-500 text-white font-bold' : 'text-slate-400 hover:text-white'}`}
+                          >
+                            <span>▼ Shorts</span>
+                          </button>
+                        </div>
+
+                        <div className="space-y-0.5 pt-0.5">
+                          {filteredAssets.length === 0 ? (
+                            <div className="text-center py-4 text-xs text-slate-500">
+                              No matching assets found.
                             </div>
-                          ))}
+                          ) : (
+                            filteredAssets.map(asset => (
+                              <div
+                                key={asset.id}
+                                onClick={() => {
+                                  setSelectedAsset(asset);
+                                  setIsAssetPickerOpen(false);
+                                  setSearchQuery('');
+                                }}
+                                className="flex items-center justify-between p-2 rounded hover:bg-white/[0.06] cursor-pointer transition text-xs"
+                              >
+                                <div className="flex items-center space-x-2.5">
+                                  <TokenLogo 
+                                    underlying={asset.underlying} 
+                                    iconColor={asset.iconColor} 
+                                    size="xs" 
+                                    rounded="sm" 
+                                    isShort={asset.isShort}
+                                    leverage={Math.abs(asset.leverage)}
+                                  />
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="font-mono font-bold text-white">{asset.symbol}</span>
+                                    <span className={`text-[9px] font-mono px-1 py-0.2 rounded font-bold ${
+                                      asset.isShort 
+                                        ? 'bg-red-500/15 text-red-400 border border-red-500/30' 
+                                        : 'bg-rh-green/15 text-rh-green border border-rh-green/30'
+                                    }`}>
+                                      {asset.isShort ? `▼ ${Math.abs(asset.leverage)}S` : `▲ ${asset.leverage}L`}
+                                    </span>
+                                    {asset.tokenAddress && (
+                                      <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-rh-green/10 text-rh-green border border-rh-green/20">
+                                        Deployed
+                                      </span>
+                                    )}
+                                  </div>
+                                  <span className="text-slate-400 text-[11px]">{asset.underlying}</span>
+                                </div>
+                                <span className="text-slate-300 font-mono">${asset.currentNav.toFixed(2)}</span>
+                              </div>
+                            ))
+                          )}
                         </div>
                       </div>
                     )}

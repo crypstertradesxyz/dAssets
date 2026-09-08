@@ -117,6 +117,38 @@ export const OracleTerminal: React.FC<OracleTerminalProps> = ({
                 <span>•</span>
                 <span>Target: <strong className="text-rh-green">Robinhood Chain (4663)</strong></span>
               </div>
+
+              {/* Sibling Leverage / Direction Multiplier Switcher */}
+              <div className="flex flex-wrap items-center gap-1.5 mt-2.5 pt-2 border-t border-white/[0.06]">
+                <span className="text-[10px] text-slate-500 font-mono uppercase">Exposure:</span>
+                {allAssets
+                  .filter(a => a.underlying === asset.underlying)
+                  .sort((a, b) => {
+                    if (a.isShort !== b.isShort) return a.isShort ? 1 : -1;
+                    return a.leverage - b.leverage;
+                  })
+                  .map(tok => {
+                    const isCurrent = tok.symbol === asset.symbol;
+                    return (
+                      <button
+                        key={tok.symbol}
+                        onClick={() => onSelectAsset(tok)}
+                        className={`px-2 py-0.5 rounded text-[11px] font-mono font-bold transition flex items-center gap-1 ${
+                          isCurrent
+                            ? tok.isShort
+                              ? 'bg-red-500 text-white shadow-sm'
+                              : 'bg-rh-green text-black shadow-sm'
+                            : 'bg-white/[0.06] text-slate-300 hover:bg-white/[0.12] border border-white/[0.06]'
+                        }`}
+                      >
+                        <span>{tok.isShort ? `▼ ${Math.abs(tok.leverage)}S` : `▲ ${tok.leverage}L`}</span>
+                        {tok.tokenAddress && (
+                          <span className="w-1.5 h-1.5 rounded-full bg-current opacity-80" title="Deployed on-chain"></span>
+                        )}
+                      </button>
+                    );
+                  })}
+              </div>
             </div>
           </div>
 
