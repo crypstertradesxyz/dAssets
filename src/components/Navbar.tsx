@@ -106,8 +106,8 @@ export const Navbar: React.FC<NavbarProps> = ({
             </svg>
           </a>
 
-          {/* Network Pill / Switch Button */}
-          {wallet.isConnected && wallet.chainId !== 4663 ? (
+          {/* Network Switch Button (Only shown if wallet is connected to wrong chain) */}
+          {wallet.isConnected && wallet.chainId !== 4663 && (
             <button
               onClick={() => Web3Service.getInstance().switchNetwork()}
               className="flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-xs text-amber-300 font-mono hover:bg-amber-500/20 transition cursor-pointer active:scale-95 shadow-sm"
@@ -116,11 +116,6 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
               <span>Switch to 4663</span>
             </button>
-          ) : (
-            <div className="hidden md:flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] text-xs text-slate-300 font-mono">
-              <span className="w-1.5 h-1.5 rounded-full bg-rh-green"></span>
-              <span>Robinhood (4663)</span>
-            </div>
           )}
 
           {/* Portfolio Shortcut Button */}
