@@ -1,7 +1,19 @@
-import React from 'react';
-import { X, Wallet, LogOut, ChevronRight, Check } from 'lucide-react';
+import React, { useState } from 'react';
+import { 
+  X, 
+  Wallet, 
+  LogOut, 
+  ChevronRight, 
+  Check, 
+  Loader2, 
+  AlertCircle, 
+  ExternalLink,
+  RefreshCw,
+  ArrowRight
+} from 'lucide-react';
 import { WalletState } from '../types';
-import { Web3Service } from '../services/web3';
+import { Web3Service, ROBINHOOD_CHAIN } from '../services/web3';
+import { CopyButton } from './CopyButton';
 
 interface WalletModalProps {
   wallet: WalletState;
@@ -10,10 +22,38 @@ interface WalletModalProps {
 
 export const WalletModal: React.FC<WalletModalProps> = ({ wallet, onClose }) => {
   const web3 = Web3Service.getInstance();
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [connectingType, setConnectingType] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [isSwitchingChain, setIsSwitchingChain] = useState(false);
 
-  const handleConnectInjected = async (type: 'robinhood' | 'metamask' | 'rabby') => {
-    await web3.connectInjected(type);
-    onClose();
+  const handleConnectInjected = async (type: 'robinhood' | 'metamask' | 'rabby' | 'injected') => {
+    setIsConnecting(true);
+    setConnectingType(type);
+    setErrorMsg(null);
+
+    try {
+      const res = await web3.connectInjected(type);
+      if (res.success) {
+        onClose();
+      } else {
+        setErrorMsg(res.error || 'Connection failed.');
+      }
+    } catch (e: any) {
+      setErrorMsg(e.message || 'Unexpected connection error.');
+    } finally {
+      setIsConnecting(false);
+      setConnectingType(null);
+    }
+  };
+
+  const handleSwitchToRobinhood = async () => {
+    setIsSwitchingChain(true);
+    try {
+      await web3.switchNetwork();
+    } finally {
+      setIsSwitchingChain(false);
+    }
   };
 
   const handleDisconnect = () => {
@@ -21,19 +61,22 @@ export const WalletModal: React.FC<WalletModalProps> = ({ wallet, onClose }) => 
     onClose();
   };
 
+  const isWrongNetwork = wallet.isConnected && wallet.chainId !== ROBINHOOD_CHAIN.chainId;
+  const hasInjected = typeof window !== 'undefined' && Boolean((window as any).ethereum || (window as any).robinhood || (window as any).rabby);
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-150">
-      <div className="glass-panel rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl relative text-slate-100 glow-border-green">
+      <div className="glass-panel rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl relative text-slate-100 glow-border-green border border-white/[0.12] bg-[#0A0D14]/95">
         
         {/* Modal Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.08] bg-[#0A0D12]/80 backdrop-blur-md">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.08] bg-[#080B10]/90 backdrop-blur-md">
           <div className="flex items-center space-x-2.5">
             <div className="w-7 h-7 rounded bg-white/[0.06] border border-white/[0.10] text-slate-300 flex items-center justify-center">
               <Wallet className="w-3.5 h-3.5" />
             </div>
             <div>
-              <h3 className="font-bold text-sm text-white">
-                {wallet.isConnected ? 'Connected Account' : 'Connect Wallet'}
+              <h3 className="font-bold text-sm text-white font-display">
+                {wallet.isConnected ? 'Connected Account' : 'Connect Web3 Wallet'}
               </h3>
               <p className="text-[11px] text-slate-400 font-mono">Robinhood Chain (4663)</p>
             </div>
@@ -49,16 +92,57 @@ export const WalletModal: React.FC<WalletModalProps> = ({ wallet, onClose }) => 
 
         {/* Modal Body */}
         <div className="p-5 space-y-4">
+          
+          {/* Error Banner */}
+          {errorMsg && (
+            <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-xs text-red-300 space-y-1.5 flex items-start gap-2.5">
+              <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <div className="font-semibold text-red-200">Connection Notice</div>
+                <div className="text-[11px] text-red-300/90 leading-relaxed">{errorMsg}</div>
+              </div>
+            </div>
+          )}
+
           {wallet.isConnected ? (
+            /* Connected State */
             <div className="space-y-4 font-mono text-xs">
-              <div className="bg-[#090C10] border border-white/[0.06] rounded-md p-3.5 space-y-2">
-                <div className="flex justify-between text-slate-400">
+              
+              {/* Network Warning if on wrong chain */}
+              {isWrongNetwork && (
+                <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-200 space-y-2">
+                  <div className="flex items-center gap-2 font-bold text-amber-300">
+                    <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
+                    <span>Wrong Network Detected</span>
+                  </div>
+                  <p className="text-[11px] text-amber-200/80 font-sans">
+                    Your wallet is connected to {wallet.networkName}. Please switch to Robinhood Chain Mainnet (4663) to trade or mint.
+                  </p>
+                  <button
+                    onClick={handleSwitchToRobinhood}
+                    disabled={isSwitchingChain}
+                    className="w-full flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-400 text-black font-bold py-2 px-3 rounded-lg text-xs transition"
+                  >
+                    {isSwitchingChain ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+                    <span>Switch to Robinhood Chain</span>
+                  </button>
+                </div>
+              )}
+
+              <div className="bg-[#090C10] border border-white/[0.06] rounded-xl p-3.5 space-y-2.5">
+                <div className="flex items-center justify-between text-slate-400">
                   <span>Address:</span>
-                  <span className="text-white font-bold">{wallet.address}</span>
+                  <div className="flex items-center gap-1.5 font-bold text-white">
+                    <span>{wallet.address ? `${wallet.address.slice(0, 6)}...${wallet.address.slice(-4)}` : '0x'}</span>
+                    {wallet.address && <CopyButton text={wallet.address} label="" />}
+                  </div>
                 </div>
                 <div className="flex justify-between text-slate-400">
                   <span>Network:</span>
-                  <span className="text-rh-green font-bold">{wallet.networkName}</span>
+                  <span className={`font-bold flex items-center gap-1.5 ${isWrongNetwork ? 'text-amber-400' : 'text-rh-green'}`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${isWrongNetwork ? 'bg-amber-400' : 'bg-rh-green'}`}></span>
+                    {wallet.networkName}
+                  </span>
                 </div>
                 <div className="flex justify-between text-slate-400">
                   <span>Robinhood ETH:</span>
@@ -68,7 +152,7 @@ export const WalletModal: React.FC<WalletModalProps> = ({ wallet, onClose }) => 
 
               {/* Active Portfolio Positions */}
               {Object.entries(wallet.holdings || {}).filter(([_, qty]) => qty > 0).length > 0 ? (
-                <div className="bg-[#090C10] border border-white/[0.06] rounded-md p-3.5 space-y-2.5">
+                <div className="bg-[#090C10] border border-white/[0.06] rounded-xl p-3.5 space-y-2.5">
                   <div className="flex items-center justify-between">
                     <span className="text-[11px] font-sans font-semibold text-slate-400 uppercase tracking-wider">
                       Active Positions
@@ -87,71 +171,122 @@ export const WalletModal: React.FC<WalletModalProps> = ({ wallet, onClose }) => 
                   </div>
                 </div>
               ) : (
-                <div className="bg-[#090C10] border border-white/[0.06] rounded-md p-3 text-center text-slate-500 text-[11px] font-sans">
+                <div className="bg-[#090C10] border border-white/[0.06] rounded-xl p-3 text-center text-slate-500 text-[11px] font-sans">
                   No active leveraged tokens held on Robinhood Chain.
                 </div>
               )}
 
               <button
                 onClick={handleDisconnect}
-                className="w-full flex items-center justify-center gap-2 bg-[#090C10] hover:bg-red-500/10 hover:text-red-400 text-slate-300 py-2.5 px-4 rounded-md border border-white/[0.08] transition text-xs font-sans font-medium"
+                className="w-full flex items-center justify-center gap-2 bg-[#090C10] hover:bg-red-500/10 hover:text-red-400 text-slate-300 py-2.5 px-4 rounded-xl border border-white/[0.08] transition text-xs font-sans font-medium"
               >
                 <LogOut className="w-3.5 h-3.5" />
                 <span>Disconnect</span>
               </button>
             </div>
           ) : (
-            <div className="space-y-2">
+            /* Wallet Selection Options */
+            <div className="space-y-2.5">
+              
               {/* Option 1: Browser Extension / MetaMask */}
               <button
                 onClick={() => handleConnectInjected('metamask')}
-                className="w-full flex items-center justify-between p-3 rounded-md bg-[#090C10] hover:bg-[#121620] border border-white/[0.08] hover:border-white/[0.2] transition text-left group"
+                disabled={isConnecting}
+                className="w-full flex items-center justify-between p-3.5 rounded-xl bg-[#090C10] hover:bg-[#121620] border border-white/[0.08] hover:border-white/[0.2] transition text-left group disabled:opacity-50"
               >
                 <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 rounded bg-amber-500/10 text-amber-400 flex items-center justify-center text-sm font-bold">
+                  <div className="w-9 h-9 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center text-lg">
                     🦊
                   </div>
                   <div>
                     <div className="text-xs font-bold text-white">MetaMask / Browser Wallet</div>
-                    <div className="text-[11px] text-slate-400">Direct on-chain connection</div>
+                    <div className="text-[11px] text-slate-400">
+                      {isConnecting && connectingType === 'metamask' ? 'Connecting... check popup' : 'Direct on-chain connection'}
+                    </div>
                   </div>
                 </div>
-                <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-white transition" />
+                {isConnecting && connectingType === 'metamask' ? (
+                  <Loader2 className="w-4 h-4 text-rh-green animate-spin" />
+                ) : (
+                  <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-white transition" />
+                )}
               </button>
 
               {/* Option 2: Robinhood Wallet */}
               <button
                 onClick={() => handleConnectInjected('robinhood')}
-                className="w-full flex items-center justify-between p-3 rounded-md bg-[#090C10] hover:bg-[#121620] border border-white/[0.08] hover:border-white/[0.2] transition text-left group"
+                disabled={isConnecting}
+                className="w-full flex items-center justify-between p-3.5 rounded-xl bg-[#090C10] hover:bg-[#121620] border border-white/[0.08] hover:border-white/[0.2] transition text-left group disabled:opacity-50"
               >
                 <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 rounded bg-rh-green/10 text-rh-green flex items-center justify-center text-xs font-bold font-mono">
+                  <div className="w-9 h-9 rounded-lg bg-rh-green/10 text-rh-green flex items-center justify-center text-xs font-bold font-mono">
                     RH
                   </div>
                   <div>
                     <div className="text-xs font-bold text-white">Robinhood Wallet</div>
-                    <div className="text-[11px] text-slate-400">Mobile or extension wallet</div>
+                    <div className="text-[11px] text-slate-400">
+                      {isConnecting && connectingType === 'robinhood' ? 'Connecting... check popup' : 'Robinhood Web3 or Extension'}
+                    </div>
                   </div>
                 </div>
-                <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-white transition" />
+                {isConnecting && connectingType === 'robinhood' ? (
+                  <Loader2 className="w-4 h-4 text-rh-green animate-spin" />
+                ) : (
+                  <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-white transition" />
+                )}
               </button>
 
               {/* Option 3: Rabby Wallet */}
               <button
                 onClick={() => handleConnectInjected('rabby')}
-                className="w-full flex items-center justify-between p-3 rounded-md bg-[#090C10] hover:bg-[#121620] border border-white/[0.08] hover:border-white/[0.2] transition text-left group"
+                disabled={isConnecting}
+                className="w-full flex items-center justify-between p-3.5 rounded-xl bg-[#090C10] hover:bg-[#121620] border border-white/[0.08] hover:border-white/[0.2] transition text-left group disabled:opacity-50"
               >
                 <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 rounded bg-blue-500/10 text-blue-400 flex items-center justify-center text-xs font-bold font-mono">
+                  <div className="w-9 h-9 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center text-xs font-bold font-mono">
                     RB
                   </div>
                   <div>
                     <div className="text-xs font-bold text-white">Rabby Wallet</div>
-                    <div className="text-[11px] text-slate-400">EVM Web3 wallet</div>
+                    <div className="text-[11px] text-slate-400">
+                      {isConnecting && connectingType === 'rabby' ? 'Connecting... check popup' : 'EVM Web3 wallet'}
+                    </div>
                   </div>
                 </div>
-                <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-white transition" />
+                {isConnecting && connectingType === 'rabby' ? (
+                  <Loader2 className="w-4 h-4 text-rh-green animate-spin" />
+                ) : (
+                  <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-white transition" />
+                )}
               </button>
+
+              {/* In case user is on mobile or doesn't have an extension */}
+              {!hasInjected && (
+                <div className="pt-2 border-t border-white/[0.06] space-y-2">
+                  <div className="text-[11px] text-slate-400">Don't have a wallet extension installed?</div>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <a
+                      href="https://metamask.app.link/dapp/www.dassetsrh.xyz"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="p-2 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-center text-slate-200 flex items-center justify-center gap-1.5 transition"
+                    >
+                      <span>MetaMask Mobile</span>
+                      <ExternalLink className="w-3 h-3 text-slate-400" />
+                    </a>
+                    <a
+                      href="https://metamask.io/download/"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="p-2 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-center text-slate-200 flex items-center justify-center gap-1.5 transition"
+                    >
+                      <span>Get MetaMask</span>
+                      <ExternalLink className="w-3 h-3 text-slate-400" />
+                    </a>
+                  </div>
+                </div>
+              )}
+
             </div>
           )}
         </div>

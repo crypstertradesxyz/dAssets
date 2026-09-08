@@ -25,6 +25,16 @@ export const HYPERLANE_CONFIG = {
   }
 };
 
+export interface EIP6963ProviderDetail {
+  info: {
+    uuid: string;
+    name: string;
+    icon: string;
+    rdns: string;
+  };
+  provider: any;
+}
+
 export class Web3Service {
   private static instance: Web3Service;
   private state: WalletState = {
@@ -38,21 +48,21 @@ export class Web3Service {
     holdings: {},
   };
   private subscribers: ((state: WalletState) => void)[] = [];
+  private activeProvider: any = null;
+  private eip6963Providers: Map<string, EIP6963ProviderDetail> = new Map();
 
   private constructor() {
-    // Check if wallet is already connected
-    if (typeof window !== 'undefined' && (window as any).ethereum) {
-      const eth = (window as any).ethereum;
-      eth.on?.('accountsChanged', (accounts: string[]) => {
-        if (!accounts || accounts.length === 0) {
-          this.disconnect();
-        } else {
-          this.refreshBalances(accounts[0]);
+    if (typeof window !== 'undefined') {
+      // 1. Listen for EIP-6963 announced providers
+      window.addEventListener('eip6963:announceProvider', (event: any) => {
+        if (event.detail && event.detail.info) {
+          this.eip6963Providers.set(event.detail.info.uuid || event.detail.info.rdns, event.detail);
         }
       });
-      eth.on?.('chainChanged', () => {
-        window.location.reload();
-      });
+      window.dispatchEvent(new Event('eip6963:requestProvider'));
+
+      // 2. Silent reconnect check if previously authorized
+      this.checkSilentReconnect();
     }
   }
 
@@ -75,67 +85,143 @@ export class Web3Service {
     this.subscribers.forEach(cb => cb({ ...this.state }));
   }
 
-  public async refreshBalances(accountAddress: string) {
-    const eth = (window as any).ethereum;
-    if (!eth) return;
+  public getDiscoveredWallets(): EIP6963ProviderDetail[] {
+    return Array.from(this.eip6963Providers.values());
+  }
 
-    try {
-      const provider = new ethers.BrowserProvider(eth);
-      const balanceWei = await provider.getBalance(accountAddress);
-      const ethVal = parseFloat(ethers.formatEther(balanceWei));
-      const formattedEth = ethVal.toFixed(4);
+  /**
+   * Resolve appropriate injected provider based on user selection
+   */
+  public getProvider(type?: 'robinhood' | 'metamask' | 'rabby' | 'injected'): any {
+    const w = typeof window !== 'undefined' ? (window as any) : {};
 
-      // Query genuine dBTC3L token balance on Robinhood Chain
-      const holdings: Record<string, number> = {};
-      try {
-        const flagshipAddress = '0x5164E1dc1Be45a0Fbe4D6A25A4713225E9bb56F6';
-        const tokenContract = new ethers.Contract(
-          flagshipAddress,
-          ['function balanceOf(address) view returns (uint256)'],
-          provider
-        );
-        const tokenBalWei = await tokenContract.balanceOf(accountAddress);
-        const tokenQty = parseFloat(ethers.formatUnits(tokenBalWei, 18));
-        if (tokenQty > 0) {
-          holdings['dBTC3L'] = tokenQty;
-        }
-      } catch (err) {
-        // Token contract query silent fallback
+    // 1. Direct window-level wallet objects
+    if (type === 'robinhood') {
+      if (w.robinhood?.ethereum) return w.robinhood.ethereum;
+      if (w.robinhood) return w.robinhood;
+    }
+    if (type === 'rabby' && w.rabby) {
+      return w.rabby;
+    }
+
+    // 2. Multi-injected array check (window.ethereum.providers)
+    if (w.ethereum?.providers && Array.isArray(w.ethereum.providers)) {
+      if (type === 'robinhood') {
+        const rh = w.ethereum.providers.find((p: any) => p.isRobinhood);
+        if (rh) return rh;
       }
+      if (type === 'rabby') {
+        const rb = w.ethereum.providers.find((p: any) => p.isRabby);
+        if (rb) return rb;
+      }
+      if (type === 'metamask') {
+        const mm = w.ethereum.providers.find((p: any) => p.isMetaMask && !p.isRabby && !p.isPhantom && !p.isBraveWallet);
+        if (mm) return mm;
+      }
+      return w.ethereum.providers[0];
+    }
 
-      this.state = {
-        ...this.state,
-        isConnected: true,
-        address: `${accountAddress.slice(0, 6)}...${accountAddress.slice(-4)}`,
-        balanceEth: formattedEth,
-        holdings,
-      };
-      this.notify();
-    } catch (err) {
-      console.warn('Error querying on-chain balance:', err);
+    // 3. Fallback to standard window.ethereum
+    if (w.ethereum) {
+      return w.ethereum;
+    }
+
+    // 4. Any EIP-6963 provider
+    const discovered = this.getDiscoveredWallets();
+    if (discovered.length > 0) {
+      if (type === 'metamask') {
+        const mm = discovered.find(d => d.info.name.toLowerCase().includes('metamask'));
+        if (mm) return mm.provider;
+      }
+      if (type === 'robinhood') {
+        const rh = discovered.find(d => d.info.name.toLowerCase().includes('robinhood'));
+        if (rh) return rh.provider;
+      }
+      if (type === 'rabby') {
+        const rb = discovered.find(d => d.info.name.toLowerCase().includes('rabby'));
+        if (rb) return rb.provider;
+      }
+      return discovered[0].provider;
+    }
+
+    return null;
+  }
+
+  /**
+   * Check if account is already authorized on page load (without prompting popup)
+   */
+  private async checkSilentReconnect() {
+    try {
+      const provider = this.getProvider();
+      if (!provider) return;
+
+      const accounts = await provider.request({ method: 'eth_accounts' });
+      if (accounts && accounts.length > 0) {
+        this.activeProvider = provider;
+        this.setupProviderListeners(provider);
+        await this.syncAccountState(provider, accounts[0]);
+      }
+    } catch (e) {
+      console.debug('Silent reconnect did not find pre-authorized accounts:', e);
     }
   }
 
-  public async connectInjected(type: 'robinhood' | 'metamask' | 'rabby' = 'robinhood') {
-    const eth = (window as any).ethereum;
-    if (!eth) {
-      alert('No Web3 wallet detected. Please install MetaMask, Rabby, or Robinhood Wallet.');
-      return;
-    }
+  private setupProviderListeners(provider: any) {
+    if (!provider || !provider.on) return;
+
+    provider.on('accountsChanged', (accounts: string[]) => {
+      if (!accounts || accounts.length === 0) {
+        this.disconnect();
+      } else {
+        this.syncAccountState(provider, accounts[0]);
+      }
+    });
+
+    provider.on('chainChanged', (chainIdHex: string) => {
+      const chainId = parseInt(chainIdHex, 16);
+      this.state = {
+        ...this.state,
+        chainId,
+        networkName: chainId === ROBINHOOD_CHAIN.chainId ? ROBINHOOD_CHAIN.name : `Chain ${chainId}`,
+      };
+      if (this.state.address) {
+        this.syncAccountState(provider, this.state.address);
+      } else {
+        this.notify();
+      }
+    });
+  }
+
+  /**
+   * Attempt to switch to or add Robinhood Chain Mainnet (4663)
+   */
+  public async switchNetwork(customProvider?: any): Promise<boolean> {
+    const provider = customProvider || this.activeProvider || this.getProvider();
+    if (!provider) return false;
 
     try {
-      const accounts = await eth.request({ method: 'eth_requestAccounts' });
-      if (!accounts || accounts.length === 0) return;
+      await provider.request({
+        method: 'wallet_switchEthereumChain',
+        params: [{ chainId: ROBINHOOD_CHAIN.chainHex }],
+      });
+      return true;
+    } catch (switchError: any) {
+      // If chain not yet registered in wallet, add it
+      const isMissing =
+        switchError?.code === 4902 ||
+        switchError?.code === -32603 ||
+        switchError?.data?.originalError?.code === 4902 ||
+        switchError?.data?.code === 4902 ||
+        (switchError?.message && (
+          switchError.message.includes('Unrecognized') ||
+          switchError.message.includes('4902') ||
+          switchError.message.includes('not added') ||
+          switchError.message.includes('unknown')
+        ));
 
-      // Switch or Add Robinhood Chain Mainnet (Chain ID 4663 / 0x1237)
-      try {
-        await eth.request({
-          method: 'wallet_switchEthereumChain',
-          params: [{ chainId: ROBINHOOD_CHAIN.chainHex }],
-        });
-      } catch (switchError: any) {
-        if (switchError.code === 4902) {
-          await eth.request({
+      if (isMissing) {
+        try {
+          await provider.request({
             method: 'wallet_addEthereumChain',
             params: [{
               chainId: ROBINHOOD_CHAIN.chainHex,
@@ -149,55 +235,140 @@ export class Web3Service {
               blockExplorerUrls: [ROBINHOOD_CHAIN.blockExplorer],
             }],
           });
+          return true;
+        } catch (addError) {
+          console.warn('Failed to add Robinhood Chain:', addError);
+          return false;
         }
       }
+      return false;
+    }
+  }
 
-      const chainIdHex = await eth.request({ method: 'eth_chainId' });
-      const currentChainId = parseInt(chainIdHex, 16);
-
-      const provider = new ethers.BrowserProvider(eth);
-      let balanceEthFormatted = '0.00';
+  /**
+   * Synchronize account address, balances, and holdings
+   */
+  private async syncAccountState(provider: any, accountAddress: string) {
+    try {
+      let currentChainId = ROBINHOOD_CHAIN.chainId;
       try {
-        const balWei = await provider.getBalance(accounts[0]);
-        balanceEthFormatted = parseFloat(ethers.formatEther(balWei)).toFixed(4);
+        const chainIdHex = await provider.request({ method: 'eth_chainId' });
+        currentChainId = parseInt(chainIdHex, 16);
       } catch (e) {
-        console.warn('Could not read ETH balance:', e);
+        // ignore
       }
 
+      // Query balance using ethers BrowserProvider
+      let formattedEth = '0.00';
       const holdings: Record<string, number> = {};
+
       try {
-        const flagshipAddress = '0x5164E1dc1Be45a0Fbe4D6A25A4713225E9bb56F6';
-        const tokenContract = new ethers.Contract(
-          flagshipAddress,
-          ['function balanceOf(address) view returns (uint256)'],
-          provider
-        );
-        const tokenBalWei = await tokenContract.balanceOf(accounts[0]);
-        const tokenQty = parseFloat(ethers.formatUnits(tokenBalWei, 18));
-        if (tokenQty > 0) {
-          holdings['dBTC3L'] = tokenQty;
+        const ethersProvider = new ethers.BrowserProvider(provider);
+        const balanceWei = await ethersProvider.getBalance(accountAddress);
+        formattedEth = parseFloat(ethers.formatEther(balanceWei)).toFixed(4);
+
+        // Query genuine dBTC3L token balance on Robinhood Chain
+        if (currentChainId === ROBINHOOD_CHAIN.chainId) {
+          try {
+            const flagshipAddress = '0x5164E1dc1Be45a0Fbe4D6A25A4713225E9bb56F6';
+            const tokenContract = new ethers.Contract(
+              flagshipAddress,
+              ['function balanceOf(address) view returns (uint256)'],
+              ethersProvider
+            );
+            const tokenBalWei = await tokenContract.balanceOf(accountAddress);
+            const tokenQty = parseFloat(ethers.formatUnits(tokenBalWei, 18));
+            if (tokenQty > 0) {
+              holdings['dBTC3L'] = tokenQty;
+            }
+          } catch (err) {
+            // silent token balance fallback
+          }
         }
       } catch (err) {
-        // ignore
+        console.warn('Balance query warning:', err);
       }
 
       this.state = {
         isConnected: true,
-        address: `${accounts[0].slice(0, 6)}...${accounts[0].slice(-4)}`,
+        address: accountAddress,
         chainId: currentChainId,
-        networkName: currentChainId === ROBINHOOD_CHAIN.chainId ? ROBINHOOD_CHAIN.name : 'Unknown Network',
-        balanceEth: balanceEthFormatted,
+        networkName: currentChainId === ROBINHOOD_CHAIN.chainId ? ROBINHOOD_CHAIN.name : `Chain ${currentChainId}`,
+        balanceEth: formattedEth,
         balanceUsdc: '0.00',
         isDemo: false,
         holdings,
       };
       this.notify();
+    } catch (err) {
+      console.warn('Error syncing account state:', err);
+    }
+  }
+
+  /**
+   * Main connection entrypoint called from WalletModal
+   */
+  public async connectInjected(type: 'robinhood' | 'metamask' | 'rabby' | 'injected' = 'injected'): Promise<{ success: boolean; error?: string }> {
+    const provider = this.getProvider(type);
+    if (!provider) {
+      return {
+        success: false,
+        error: `No Web3 wallet extension detected for ${type === 'injected' ? 'this browser' : type}. Please install or open MetaMask, Rabby, or Robinhood Wallet.`
+      };
+    }
+
+    try {
+      this.activeProvider = provider;
+      this.setupProviderListeners(provider);
+
+      // Request user account authorization
+      const accounts = await provider.request({ method: 'eth_requestAccounts' });
+      if (!accounts || accounts.length === 0) {
+        return {
+          success: false,
+          error: 'No accounts selected. Please select an account in your wallet.'
+        };
+      }
+
+      // Attempt to ensure on Robinhood Chain Mainnet (Chain 4663)
+      await this.switchNetwork(provider);
+
+      // Sync account state
+      await this.syncAccountState(provider, accounts[0]);
+
+      return { success: true };
     } catch (err: any) {
       console.error('Wallet connection rejected or failed:', err);
+
+      if (err.code === 4001) {
+        return {
+          success: false,
+          error: 'Connection request was cancelled or rejected in your wallet.'
+        };
+      }
+
+      if (err.code === -32002) {
+        return {
+          success: false,
+          error: 'A connection request is already pending in your wallet extension. Please open your wallet extension to approve it.'
+        };
+      }
+
+      return {
+        success: false,
+        error: err.message || 'Failed to connect to wallet. Please try again.'
+      };
+    }
+  }
+
+  public async refreshBalances(accountAddress: string) {
+    if (this.activeProvider) {
+      await this.syncAccountState(this.activeProvider, accountAddress);
     }
   }
 
   public disconnect() {
+    this.activeProvider = null;
     this.state = {
       isConnected: false,
       address: null,
@@ -216,10 +387,8 @@ export class Web3Service {
     this.state.holdings[symbol] = currentHolding + amount;
     this.notify();
 
-    // Re-query real on-chain balance
-    const eth = (window as any).ethereum;
-    if (eth && eth.selectedAddress) {
-      this.refreshBalances(eth.selectedAddress);
+    if (this.state.address) {
+      this.refreshBalances(this.state.address);
     }
   }
 
@@ -228,10 +397,8 @@ export class Web3Service {
     this.state.holdings[symbol] = Math.max(0, currentHolding - amount);
     this.notify();
 
-    const eth = (window as any).ethereum;
-    if (eth && eth.selectedAddress) {
-      this.refreshBalances(eth.selectedAddress);
+    if (this.state.address) {
+      this.refreshBalances(this.state.address);
     }
   }
 }
-

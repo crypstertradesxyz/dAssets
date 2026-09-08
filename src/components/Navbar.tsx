@@ -6,6 +6,7 @@ import {
   X
 } from 'lucide-react';
 import { WalletState, AppView } from '../types';
+import { Web3Service } from '../services/web3';
 
 interface NavbarProps {
   wallet: WalletState;
@@ -104,11 +105,22 @@ export const Navbar: React.FC<NavbarProps> = ({
             </svg>
           </a>
 
-          {/* Network Pill */}
-          <div className="hidden md:flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] text-xs text-slate-300 font-mono">
-            <span className="w-1.5 h-1.5 rounded-full bg-rh-green"></span>
-            <span>Robinhood (4663)</span>
-          </div>
+          {/* Network Pill / Switch Button */}
+          {wallet.isConnected && wallet.chainId !== 4663 ? (
+            <button
+              onClick={() => Web3Service.getInstance().switchNetwork()}
+              className="hidden md:flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-xs text-amber-300 font-mono hover:bg-amber-500/20 transition cursor-pointer"
+              title="Click to switch to Robinhood Chain Mainnet (4663)"
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
+              <span>Switch to 4663</span>
+            </button>
+          ) : (
+            <div className="hidden md:flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] text-xs text-slate-300 font-mono">
+              <span className="w-1.5 h-1.5 rounded-full bg-rh-green"></span>
+              <span>Robinhood (4663)</span>
+            </div>
+          )}
 
           {/* Wallet Button */}
           {wallet.isConnected ? (
@@ -116,8 +128,8 @@ export const Navbar: React.FC<NavbarProps> = ({
               onClick={onOpenWalletModal}
               className="flex items-center gap-2 bg-[#0E1218] hover:bg-[#141A22] text-slate-200 border border-white/[0.10] px-3 py-1.5 rounded-md text-xs font-mono font-medium transition"
             >
-              <div className="w-1.5 h-1.5 rounded-full bg-rh-green"></div>
-              <span>{wallet.address}</span>
+              <div className={`w-1.5 h-1.5 rounded-full ${wallet.chainId !== 4663 ? 'bg-amber-400 animate-pulse' : 'bg-rh-green'}`}></div>
+              <span>{wallet.address ? `${wallet.address.slice(0, 6)}...${wallet.address.slice(-4)}` : 'Connected'}</span>
               {wallet.isDemo && (
                 <span className="text-[9px] bg-white/[0.08] text-slate-400 px-1 py-0.5 rounded font-sans uppercase">
                   Preview

@@ -26,7 +26,19 @@ export async function mintGenuineOnChain(
           params: [{ chainId: '0x1237' }],
         });
       } catch (switchError: any) {
-        if (switchError.code === 4902) {
+        const isMissing =
+          switchError?.code === 4902 ||
+          switchError?.code === -32603 ||
+          switchError?.data?.originalError?.code === 4902 ||
+          switchError?.data?.code === 4902 ||
+          (switchError?.message && (
+            switchError.message.includes('Unrecognized') ||
+            switchError.message.includes('4902') ||
+            switchError.message.includes('not added') ||
+            switchError.message.includes('unknown')
+          ));
+
+        if (isMissing) {
           await eth.request({
             method: 'wallet_addEthereumChain',
             params: [{
