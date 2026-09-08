@@ -7,8 +7,7 @@ import {
   TrendingUp, 
   TrendingDown,
   ShieldCheck,
-  FileCode,
-  Download
+  FileCode
 } from 'lucide-react';
 import { CopyButton } from './CopyButton';
 import deployedConfig from '../contracts/deployedAddresses.json';
@@ -253,14 +252,6 @@ export const HomeView: React.FC<HomeViewProps> = ({
               <span className="w-2 h-2 rounded-full bg-rh-green"></span>
               <span className="text-[11px] sm:text-xs">Official Protocol Identity • Robinhood Chain</span>
             </div>
-            <a
-              href="/banner.png"
-              download="dAssets_banner_1500x500.png"
-              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white/10 hover:bg-white/20 backdrop-blur-md text-white text-xs font-semibold transition shadow-sm"
-            >
-              <Download className="w-3.5 h-3.5" />
-              <span>Download 1500×500 Banner</span>
-            </a>
           </div>
         </motion.div>
 
