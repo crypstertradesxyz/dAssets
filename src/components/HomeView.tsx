@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { 
   ArrowRight, 
@@ -7,7 +7,9 @@ import {
   TrendingUp, 
   TrendingDown,
   ShieldCheck,
-  FileCode
+  FileCode,
+  Flame,
+  Crown
 } from 'lucide-react';
 import { CopyButton } from './CopyButton';
 import deployedConfig from '../contracts/deployedAddresses.json';
@@ -25,7 +27,7 @@ interface HomeViewProps {
 export const HomeView: React.FC<HomeViewProps> = ({ 
   assets,
   onExploreMarkets, 
-  onSelectAsset,
+  onSelectAsset, 
   onMintAsset,
   onOpenContracts,
 }) => {
@@ -33,6 +35,41 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
   const [activeTabSymbol, setActiveTabSymbol] = useState('dBTC3L');
   const activeAsset = assets.find(a => a.symbol === activeTabSymbol) || assets[0];
+
+  const [spotlightFilter, setSpotlightFilter] = useState<'top_movers' | 'top_gainers' | 'majors' | 'deployed'>('top_movers');
+
+  const spotlightAssets = useMemo(() => {
+    switch (spotlightFilter) {
+      case 'top_movers':
+        return [...assets]
+          .sort((a, b) => Math.abs(b.change24h) - Math.abs(a.change24h))
+          .slice(0, 4);
+
+      case 'top_gainers':
+        return [...assets]
+          .sort((a, b) => b.change24h - a.change24h)
+          .slice(0, 4);
+
+      case 'majors':
+        return [
+          assets.find(a => a.symbol === 'dBTC3L') || assets[0],
+          assets.find(a => a.symbol === 'dBTC5L') || assets[1],
+          assets.find(a => a.symbol === 'dETH3L') || assets[2],
+          assets.find(a => a.symbol === 'dSOL5L') || assets[3],
+        ].filter(Boolean);
+
+      case 'deployed':
+        const deployed = assets.filter(a => a.tokenAddress || a.isMinted);
+        if (deployed.length >= 4) return deployed.slice(0, 4);
+        return [
+          ...deployed,
+          ...assets.filter(a => !deployed.includes(a))
+        ].slice(0, 4);
+
+      default:
+        return assets.slice(0, 4);
+    }
+  }, [assets, spotlightFilter]);
 
   const quickSymbols = ['dBTC3L', 'dETH3L', 'dSOL5L', 'dHYPE3L'];
   const marqueeAssets = assets.slice(0, 16);
@@ -280,44 +317,80 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
         </section>
 
-        {/* Featured & Trending Markets Spotlight */}
+        {/* Market Spotlight & Movers Section */}
         <section className="space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/[0.08] pb-3">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-white/[0.08] pb-3">
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className="w-2 h-2 rounded-full bg-rh-green animate-pulse" />
                 <h2 className="text-base font-bold text-white font-display">
-                  Featured & Trending Leveraged Markets
+                  Market Spotlight & Live Movers
                 </h2>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-white/[0.06] text-slate-300 border border-white/[0.08]">
+                  Pyth Oracle
+                </span>
               </div>
               <p className="text-xs text-slate-400 mt-0.5">
-                Multi-tier constant exposure tokens backed by autonomous on-chain rebalancing.
+                Real-time algorithmic ranking of 270+ leveraged markets by volatility, momentum, and on-chain status.
               </p>
             </div>
 
-            <a
-              href="/markets"
-              onClick={(e) => {
-                if (!e.metaKey && !e.ctrlKey) {
-                  e.preventDefault();
-                  onExploreMarkets();
-                }
-              }}
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-rh-green hover:text-white transition group self-start sm:self-auto cursor-pointer"
-            >
-              <span>Explore All 270+ Markets</span>
-              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-            </a>
+            {/* Interactive Spotlight Filter Pills */}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {[
+                { id: 'top_movers' as const, label: 'Top Volatility', icon: Flame },
+                { id: 'top_gainers' as const, label: 'Top Gainers', icon: TrendingUp },
+                { id: 'majors' as const, label: 'Majors', icon: Crown },
+                { id: 'deployed' as const, label: 'Live Deployed', icon: ShieldCheck },
+              ].map(opt => {
+                const Icon = opt.icon;
+                const isActive = spotlightFilter === opt.id;
+                return (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => setSpotlightFilter(opt.id)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-all cursor-pointer ${
+                      isActive
+                        ? 'bg-rh-green text-black font-bold shadow-md shadow-rh-green/10'
+                        : 'bg-white/[0.04] text-slate-400 hover:text-white hover:bg-white/[0.08] border border-white/[0.06]'
+                    }`}
+                  >
+                    <Icon className={`w-3 h-3 ${isActive ? 'text-black' : 'text-slate-400'}`} />
+                    <span>{opt.label}</span>
+                  </button>
+                );
+              })}
+
+              <a
+                href="/markets"
+                onClick={(e) => {
+                  if (!e.metaKey && !e.ctrlKey) {
+                    e.preventDefault();
+                    onExploreMarkets();
+                  }
+                }}
+                className="inline-flex items-center gap-1 text-xs font-semibold text-rh-green hover:text-white transition px-2 py-1 cursor-pointer"
+              >
+                <span>View All 270+</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </a>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-            {[
-              assets.find(a => a.symbol === 'dBTC3L') || assets[0],
-              assets.find(a => a.symbol === 'dETH3L') || assets[1],
-              assets.find(a => a.symbol === 'dSOL5L') || assets[2],
-              assets.find(a => a.symbol === 'dBTC3S') || assets[3],
-            ].map((item) => {
-              const isPos = item.change24h >= 0;
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {spotlightAssets.map((item, idx) => {
+              const changeVal = typeof item.change24h === 'number' ? item.change24h : 0;
+              const isPos = changeVal >= 0;
+              const rankLabel =
+                spotlightFilter === 'top_movers'
+                  ? `#${idx + 1} Volatility`
+                  : spotlightFilter === 'top_gainers'
+                  ? `#${idx + 1} Gainer`
+                  : spotlightFilter === 'majors'
+                  ? 'Benchmark'
+                  : 'On-Chain';
+
               return (
                 <a
                   key={item.symbol}
@@ -328,10 +401,11 @@ export const HomeView: React.FC<HomeViewProps> = ({
                       onSelectAsset(item);
                     }
                   }}
-                  className="block glass-panel glass-panel-hover rounded-2xl p-4.5 space-y-3 cursor-pointer group relative overflow-hidden"
+                  className="block glass-panel glass-panel-hover rounded-2xl p-5 space-y-4 cursor-pointer group relative overflow-hidden transition-all hover:border-rh-green/30"
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2.5">
+                  {/* Card Header: Token Logo, Symbol, Underlying + Leverage Badge */}
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center space-x-3">
                       <TokenLogo 
                         underlying={item.underlying} 
                         iconColor={item.iconColor} 
@@ -339,50 +413,74 @@ export const HomeView: React.FC<HomeViewProps> = ({
                         rounded="lg" 
                       />
                       <div>
-                        <div className="font-bold text-white text-sm font-display group-hover:text-rh-green transition-colors">
+                        <div className="font-bold text-white text-base font-display group-hover:text-rh-green transition-colors leading-tight">
                           {item.symbol}
                         </div>
-                        <div className="text-[11px] text-slate-400 font-sans">
+                        <div className="text-xs text-slate-400 font-sans truncate max-w-[100px]">
                           {item.underlyingName}
                         </div>
                       </div>
                     </div>
 
-                    <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full ${
-                      item.isShort
-                        ? 'bg-red-500/10 text-red-400 border border-red-500/30'
-                        : 'bg-rh-green/10 text-rh-green border border-rh-green/30'
-                    }`}>
-                      {item.isShort ? '▼' : '▲'} {Math.abs(item.leverage)}x {item.isShort ? 'Short' : 'Long'}
-                    </span>
+                    <div className="flex flex-col items-end gap-1">
+                      <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-md ${
+                        item.isShort
+                          ? 'bg-red-500/10 text-red-400 border border-red-500/30'
+                          : 'bg-rh-green/10 text-rh-green border border-rh-green/30'
+                      }`}>
+                        {item.isShort ? '▼' : '▲'} {Math.abs(item.leverage)}x {item.isShort ? 'Short' : 'Long'}
+                      </span>
+                      <span className="text-[9px] font-mono text-slate-500 font-medium">
+                        {rankLabel}
+                      </span>
+                    </div>
                   </div>
 
-                  {/* NAV & 24h Change */}
+                  {/* Mid Row: Oracle NAV & 24h Change */}
                   <div className="flex items-baseline justify-between pt-1">
                     <div>
-                      <div className="text-[10px] text-slate-400 font-sans uppercase">Oracle NAV</div>
+                      <div className="text-[10px] text-slate-400 font-sans uppercase tracking-wider">Oracle NAV</div>
                       <div className="text-xl font-bold text-white font-mono mt-0.5">
                         ${item.currentNav.toFixed(2)}
                       </div>
                     </div>
 
                     <div className="text-right">
-                      <div className="text-[10px] text-slate-400 font-sans uppercase">24h Change</div>
-                      <div className={`text-xs font-bold font-mono inline-flex items-center gap-0.5 mt-0.5 ${
-                        isPos ? 'text-rh-green' : 'text-red-400'
+                      <div className="text-[10px] text-slate-400 font-sans uppercase tracking-wider">24h Return</div>
+                      <div className={`text-xs font-bold font-mono inline-flex items-center gap-1 mt-0.5 px-2 py-0.5 rounded ${
+                        isPos ? 'bg-rh-green/10 text-rh-green' : 'bg-red-500/10 text-red-400'
                       }`}>
                         {isPos ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                        <span>{isPos ? '+' : ''}{item.change24h}%</span>
+                        <span>{isPos ? '+' : ''}{changeVal.toFixed(2)}%</span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Spot Benchmark & Robinhood Badge */}
-                  <div className="pt-2 border-t border-white/[0.06] flex items-center justify-between text-[11px] font-mono text-slate-400">
-                    <span>Spot: <strong className="text-slate-200">${item.indexPrice.toLocaleString()}</strong></span>
-                    <span className={item.tokenAddress ? 'text-rh-green' : 'text-slate-500'}>
-                      {item.tokenAddress ? '● Deployed' : '○ Deployable'}
-                    </span>
+                  {/* Bottom Row: Separated 2-column info grid to prevent any text overlap or collision */}
+                  <div className="pt-3 border-t border-white/[0.06] grid grid-cols-2 gap-2 text-[11px] font-mono">
+                    <div className="min-w-0">
+                      <span className="text-[10px] text-slate-500 uppercase tracking-wider block font-sans">
+                        Index Spot
+                      </span>
+                      <span className="text-slate-200 font-semibold block truncate">
+                        ${item.indexPrice >= 1000 
+                          ? Math.round(item.indexPrice).toLocaleString() 
+                          : item.indexPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                    <div className="text-right min-w-0">
+                      <span className="text-[10px] text-slate-500 uppercase tracking-wider block font-sans">
+                        Contract
+                      </span>
+                      <span className={`inline-flex items-center justify-end gap-1.5 font-medium ${
+                        item.tokenAddress ? 'text-rh-green' : 'text-slate-400'
+                      }`}>
+                        <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                          item.tokenAddress ? 'bg-rh-green shadow-[0_0_8px_rgba(0,200,5,0.8)] animate-pulse' : 'bg-slate-500'
+                        }`} />
+                        {item.tokenAddress ? 'Deployed' : 'Deployable'}
+                      </span>
+                    </div>
                   </div>
                 </a>
               );
