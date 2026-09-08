@@ -71,13 +71,14 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
             <button
               onClick={() => setActiveView('terminal')}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium transition ${
+              className={`px-3 py-1.5 rounded-md text-xs font-medium transition flex items-center gap-1.5 ${
                 activeView === 'terminal'
                   ? 'text-white bg-white/[0.08]'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              Terminal
+              <span className="w-1.5 h-1.5 rounded-full bg-rh-green animate-pulse" />
+              <span>Oracle Feed</span>
             </button>
             <button
               onClick={() => setActiveView('bridge')}
