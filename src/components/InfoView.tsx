@@ -70,6 +70,10 @@ export const InfoView: React.FC<InfoViewProps> = ({
       a: 'Every 8 hours (at 00:00, 08:00, and 16:00 UTC), autonomous keeper contracts compute the target leverage multiplier (e.g. exactly 3.00x). As the underlying market trends, the effective leverage naturally drifts; the automated rebalancer recalibrates vault exposure back to the target constant ratio. This locks in gains during trending bull moves and de-risks positions during declines.'
     },
     {
+      q: 'Why do some tokens show "Trade" while others show "Mint"?',
+      a: 'The protocol dynamically detects whether an active Uniswap liquidity pool exists on Robinhood Chain:\n• If a pool is already live: You will see "Trade" / "Swap on Uniswap 🦄" to execute instant AMM market swaps with native ETH, alongside the secondary option to mint/redeem at Oracle NAV.\n• If a pool is unseeded: Uniswap has no liquidity yet (which would cause "Insufficient liquidity" errors on Uniswap). For these unseeded tokens, the app displays "Mint" to issue tokens directly via the on-chain vault at exact Pyth Oracle NAV with zero slippage, as well as an option to "Seed Pool" to launch initial AMM liquidity.'
+    },
+    {
       q: 'How do I buy or enter a leveraged position using native ETH?',
       a: 'There are two ways to enter:\n1. Instant Uniswap Swap (Recommended): Go to the "Trade" tab, select "Buy with ETH", enter how much regular Robinhood ETH you want to spend, and click "Swap on Uniswap 🦄". You will receive genuine on-chain ERC20 tokens in your wallet.\n2. Protocol Vault Mint: Go to the "Markets" tab, find any asset, and click "Mint" to issue tokens directly at the live Pyth Oracle NAV.'
     },

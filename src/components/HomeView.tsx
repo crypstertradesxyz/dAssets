@@ -15,13 +15,14 @@ import { CopyButton } from './CopyButton';
 import deployedConfig from '../contracts/deployedAddresses.json';
 import { LeveragedAsset, AppView } from '../types';
 import { TokenLogo } from './TokenLogo';
-import { getUniswapSwapUrl } from '../utils/uniswap';
+import { getUniswapSwapUrl, hasActivePool } from '../utils/uniswap';
 
 interface HomeViewProps {
   assets: LeveragedAsset[];
   onExploreMarkets: () => void;
   onSelectAsset: (asset: LeveragedAsset) => void;
   onMintAsset: (asset: LeveragedAsset) => void;
+  onSeedPool?: (asset: LeveragedAsset) => void;
   onOpenContracts: () => void;
   onNavigate?: (view: AppView, asset?: LeveragedAsset) => void;
 }
@@ -31,6 +32,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
   onExploreMarkets, 
   onSelectAsset, 
   onMintAsset,
+  onSeedPool,
   onOpenContracts,
   onNavigate,
 }) => {
@@ -336,6 +338,13 @@ export const HomeView: React.FC<HomeViewProps> = ({
                   <span>Automated Rebalance:</span>
                   <span className="text-slate-200">Every 8 Hours</span>
                 </div>
+                <div className="flex justify-between text-slate-400">
+                  <span>Uniswap AMM:</span>
+                  <span className={`font-semibold flex items-center gap-1.5 ${hasActivePool(activeAsset) ? 'text-rh-green' : 'text-slate-400'}`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${hasActivePool(activeAsset) ? 'bg-rh-green animate-pulse' : 'bg-slate-500'}`}></span>
+                    {hasActivePool(activeAsset) ? 'Active Pool' : 'Unseeded (Use Vault Mint)'}
+                  </span>
+                </div>
                 {activeAsset.tokenAddress ? (
                   <div className="flex items-center justify-between text-slate-400 pt-1.5 border-t border-white/[0.04]">
                     <span>Contract CA:</span>
@@ -352,30 +361,64 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 )}
               </div>
 
-
-              {/* Action Buttons */}
+              {/* Action Buttons: Show Trade when pool is live, otherwise show Mint via Vault */}
               <div className="flex items-center gap-2 pt-1 font-sans">
-                <a
-                  href={getUniswapSwapUrl(activeAsset.tokenAddress)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex-1 flex items-center justify-center gap-2 bg-pink-500 hover:bg-pink-400 text-white font-bold py-3 px-3 rounded-xl text-xs transition shadow-md cursor-pointer"
-                  title="Trade on Uniswap (Robinhood Chain)"
-                >
-                  <img src="/logos/uni.png" alt="Uniswap" className="w-4 h-4 rounded-full" />
-                  <span>Trade Uniswap</span>
-                  <ExternalLink className="w-3 h-3 opacity-80" />
-                </a>
+                {hasActivePool(activeAsset) ? (
+                  <>
+                    <a
+                      href={getUniswapSwapUrl(activeAsset.tokenAddress)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 flex items-center justify-center gap-2 bg-pink-500 hover:bg-pink-400 text-white font-bold py-3 px-3 rounded-xl text-xs transition shadow-md cursor-pointer"
+                      title="Trade on Uniswap (Robinhood Chain)"
+                    >
+                      <img src="/logos/uni.png" alt="Uniswap" className="w-4 h-4 rounded-full" />
+                      <span>Trade Uniswap</span>
+                      <ExternalLink className="w-3 h-3 opacity-80" />
+                    </a>
 
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => onMintAsset(activeAsset)}
-                  className="flex-1 flex items-center justify-center gap-2 bg-white hover:bg-slate-200 text-black font-bold py-3 px-3 rounded-xl text-xs transition shadow-sm"
-                >
-                  <Zap className="w-3.5 h-3.5 fill-current" />
-                  <span>Mint Vault</span>
-                </motion.button>
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => onMintAsset(activeAsset)}
+                      className="flex-1 flex items-center justify-center gap-2 bg-white hover:bg-slate-200 text-black font-bold py-3 px-3 rounded-xl text-xs transition shadow-sm cursor-pointer"
+                    >
+                      <Zap className="w-3.5 h-3.5 fill-current text-rh-green" />
+                      <span>Mint Vault</span>
+                    </motion.button>
+                  </>
+                ) : (
+                  <>
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => onMintAsset(activeAsset)}
+                      className="flex-1 flex items-center justify-center gap-2 bg-rh-green hover:bg-rh-green/90 text-black font-bold py-3 px-3 rounded-xl text-xs transition shadow-md cursor-pointer"
+                    >
+                      <Zap className="w-3.5 h-3.5 fill-current" />
+                      <span>Mint via Vault</span>
+                    </motion.button>
+
+                    {onSeedPool ? (
+                      <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => onSeedPool(activeAsset)}
+                        className="flex-1 flex items-center justify-center gap-2 bg-pink-500/15 hover:bg-pink-500/25 text-pink-300 border border-pink-500/30 font-bold py-3 px-3 rounded-xl text-xs transition shadow-sm cursor-pointer"
+                      >
+                        <img src="/logos/uni.png" alt="Uniswap" className="w-3.5 h-3.5 rounded-full" />
+                        <span>Seed Pool</span>
+                      </motion.button>
+                    ) : (
+                      <button
+                        onClick={() => onNavigate?.('trade', activeAsset)}
+                        className="flex-1 flex items-center justify-center gap-2 bg-white/[0.08] hover:bg-white/[0.14] text-white font-bold py-3 px-3 rounded-xl text-xs transition cursor-pointer"
+                      >
+                        <span>Trade View →</span>
+                      </button>
+                    )}
+                  </>
+                )}
               </div>
 
             </div>

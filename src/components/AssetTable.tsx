@@ -17,7 +17,7 @@ import {
 import { LeveragedAsset, AssetCategory } from '../types';
 import { CopyButton } from './CopyButton';
 import { TokenLogo } from './TokenLogo';
-import { getUniswapSwapUrl } from '../utils/uniswap';
+import { getUniswapSwapUrl, hasActivePool } from '../utils/uniswap';
 
 interface AssetTableProps {
   assets: LeveragedAsset[];
@@ -96,6 +96,7 @@ export const AssetTable: React.FC<AssetTableProps> = ({
   assets,
   onSelectAsset,
   onMintAsset,
+  onSeedPool,
 }) => {
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<AssetCategory>('all');
@@ -354,6 +355,7 @@ export const AssetTable: React.FC<AssetTableProps> = ({
           {filteredGroups.map((group) => {
             const activeToken = getActiveToken(group);
             const isPos = activeToken.change24h >= 0;
+            const isLive = hasActivePool(activeToken);
 
             return (
               <motion.div
@@ -378,9 +380,13 @@ export const AssetTable: React.FC<AssetTableProps> = ({
                           <h3 className="font-bold text-white text-base font-display group-hover:text-rh-green transition-colors">
                             {activeToken.symbol}
                           </h3>
-                          {activeToken.tokenAddress && (
-                            <span className="w-1.5 h-1.5 rounded-full bg-rh-green" title="Deployed on Robinhood Chain" />
-                          )}
+                          <span className={`px-1.5 py-0.2 rounded text-[9px] font-mono font-bold ${
+                            isLive 
+                              ? 'bg-rh-green/10 text-rh-green border border-rh-green/25' 
+                              : 'bg-white/[0.04] text-slate-400 border border-white/[0.08]'
+                          }`}>
+                            {isLive ? 'Active Pool' : 'Unseeded'}
+                          </span>
                         </div>
                         <div className="text-xs text-slate-400 font-sans">
                           {group.name}
@@ -455,25 +461,51 @@ export const AssetTable: React.FC<AssetTableProps> = ({
                   </div>
                 </div>
 
-                {/* Card Action Buttons Footer */}
+                {/* Card Action Buttons Footer: Trade if pool is live, Mint if unseeded */}
                 <div className="flex items-center gap-2 pt-3 border-t border-white/[0.06] font-sans" onClick={(e) => e.stopPropagation()}>
-                  <a
-                    href={getUniswapSwapUrl(activeToken.tokenAddress)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex-1 bg-pink-500/15 hover:bg-pink-500/25 text-pink-300 hover:text-pink-200 py-2.5 px-2 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5 border border-pink-500/30 cursor-pointer shadow-sm"
-                    title={`Trade ${activeToken.symbol} on Uniswap`}
-                  >
-                    <img src="/logos/uni.png" alt="Uniswap" className="w-3.5 h-3.5 rounded-full" />
-                    <span>Trade</span>
-                  </a>
-                  <button
-                    onClick={() => onMintAsset(activeToken)}
-                    className="flex-1 bg-white hover:bg-slate-200 text-black py-2.5 px-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm"
-                  >
-                    <Zap className="w-3.5 h-3.5 fill-current" />
-                    <span>Mint</span>
-                  </button>
+                  {isLive ? (
+                    <>
+                      <a
+                        href={getUniswapSwapUrl(activeToken.tokenAddress)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-1 bg-pink-500 hover:bg-pink-400 text-white py-2.5 px-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 border border-pink-500/40 cursor-pointer shadow-md"
+                        title={`Trade ${activeToken.symbol} on Uniswap`}
+                      >
+                        <img src="/logos/uni.png" alt="Uniswap" className="w-3.5 h-3.5 rounded-full" />
+                        <span>Trade</span>
+                      </a>
+                      <button
+                        onClick={() => onMintAsset(activeToken)}
+                        className="flex-1 bg-white/[0.08] hover:bg-white/[0.16] text-white py-2.5 px-2 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5 border border-white/[0.12] cursor-pointer"
+                        title={`Mint ${activeToken.symbol} directly at Oracle NAV`}
+                      >
+                        <Zap className="w-3.5 h-3.5 fill-current text-rh-green" />
+                        <span>Mint</span>
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => onMintAsset(activeToken)}
+                        className="flex-1 bg-white hover:bg-slate-200 text-black py-2.5 px-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
+                        title={`Mint ${activeToken.symbol} directly at Oracle NAV`}
+                      >
+                        <Zap className="w-3.5 h-3.5 fill-current" />
+                        <span>Mint</span>
+                      </button>
+                      {onSeedPool && (
+                        <button
+                          onClick={() => onSeedPool(activeToken)}
+                          className="flex-1 bg-pink-500/15 hover:bg-pink-500/25 text-pink-300 hover:text-pink-200 py-2.5 px-2 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5 border border-pink-500/30 cursor-pointer"
+                          title={`Seed Uniswap Pool for ${activeToken.symbol}`}
+                        >
+                          <img src="/logos/uni.png" alt="Uniswap" className="w-3.5 h-3.5 rounded-full" />
+                          <span>Seed</span>
+                        </button>
+                      )}
+                    </>
+                  )}
                   <a
                     href={`/terminal/${activeToken.symbol}`}
                     onClick={(e) => {
@@ -536,6 +568,7 @@ export const AssetTable: React.FC<AssetTableProps> = ({
                 {filteredGroups.map((group) => {
                   const activeToken = getActiveToken(group);
                   const isPos = activeToken.change24h >= 0;
+                  const isLive = hasActivePool(activeToken);
 
                   return (
                     <tr
@@ -553,8 +586,17 @@ export const AssetTable: React.FC<AssetTableProps> = ({
                             rounded="lg" 
                           />
                           <div>
-                            <div className="font-bold text-base text-white group-hover:text-rh-green transition-colors">
-                              {activeToken.symbol}
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-bold text-base text-white group-hover:text-rh-green transition-colors">
+                                {activeToken.symbol}
+                              </span>
+                              <span className={`px-1.5 py-0.2 rounded text-[9px] font-mono font-bold ${
+                                isLive 
+                                  ? 'bg-rh-green/10 text-rh-green border border-rh-green/25' 
+                                  : 'bg-white/[0.04] text-slate-400 border border-white/[0.08]'
+                              }`}>
+                                {isLive ? 'Active Pool' : 'Unseeded'}
+                              </span>
                             </div>
                             <div className="text-xs text-slate-400 font-sans">
                               {group.name}
@@ -609,25 +651,50 @@ export const AssetTable: React.FC<AssetTableProps> = ({
                         ${group.spotPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </td>
 
-                      {/* Actions */}
+                      {/* Actions: Trade if pool live, Mint if unseeded */}
                       <td className="py-4 px-6 text-right font-sans" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-end gap-2">
-                          <a
-                            href={getUniswapSwapUrl(activeToken.tokenAddress)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="px-3 py-1.5 rounded-lg bg-pink-500/15 hover:bg-pink-500/25 text-pink-300 hover:text-pink-200 text-xs font-semibold transition border border-pink-500/30 inline-flex items-center gap-1 cursor-pointer shadow-sm"
-                            title={`Trade ${activeToken.symbol} on Uniswap`}
-                          >
-                            <img src="/logos/uni.png" alt="Uniswap" className="w-3 h-3 rounded-full" />
-                            <span>Trade</span>
-                          </a>
-                          <button
-                            onClick={() => onMintAsset(activeToken)}
-                            className="px-3.5 py-1.5 rounded-lg bg-white hover:bg-slate-200 text-black text-xs font-bold transition shadow-sm"
-                          >
-                            Mint
-                          </button>
+                          {isLive ? (
+                            <>
+                              <a
+                                href={getUniswapSwapUrl(activeToken.tokenAddress)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-3 py-1.5 rounded-lg bg-pink-500 hover:bg-pink-400 text-white text-xs font-bold transition inline-flex items-center gap-1 cursor-pointer shadow-sm"
+                                title={`Trade ${activeToken.symbol} on Uniswap`}
+                              >
+                                <img src="/logos/uni.png" alt="Uniswap" className="w-3 h-3 rounded-full" />
+                                <span>Trade</span>
+                              </a>
+                              <button
+                                onClick={() => onMintAsset(activeToken)}
+                                className="px-3.5 py-1.5 rounded-lg bg-white/[0.08] hover:bg-white/[0.14] text-white text-xs font-semibold transition border border-white/[0.10]"
+                                title={`Mint ${activeToken.symbol} at Oracle NAV`}
+                              >
+                                Mint
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button
+                                onClick={() => onMintAsset(activeToken)}
+                                className="px-3.5 py-1.5 rounded-lg bg-white hover:bg-slate-200 text-black text-xs font-bold transition shadow-sm cursor-pointer"
+                                title={`Mint ${activeToken.symbol} at Oracle NAV`}
+                              >
+                                Mint
+                              </button>
+                              {onSeedPool && (
+                                <button
+                                  onClick={() => onSeedPool(activeToken)}
+                                  className="px-3 py-1.5 rounded-lg bg-pink-500/15 hover:bg-pink-500/25 text-pink-300 border border-pink-500/30 text-xs font-semibold transition inline-flex items-center gap-1 cursor-pointer"
+                                  title={`Seed Uniswap Pool for ${activeToken.symbol}`}
+                                >
+                                  <img src="/logos/uni.png" alt="Uniswap" className="w-3 h-3 rounded-full" />
+                                  <span>Seed</span>
+                                </button>
+                              )}
+                            </>
+                          )}
                           <a
                             href={`/terminal/${activeToken.symbol}`}
                             onClick={(e) => {

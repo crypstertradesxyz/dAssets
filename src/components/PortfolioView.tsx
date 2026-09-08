@@ -22,7 +22,7 @@ import { BridgeService } from '../services/bridge';
 import { Web3Service } from '../services/web3';
 import { TokenLogo } from './TokenLogo';
 import { CopyButton } from './CopyButton';
-import { getUniswapSwapUrl, getUniswapSellUrl, getBlockscoutAddressUrl } from '../utils/uniswap';
+import { getUniswapSwapUrl, getUniswapSellUrl, getBlockscoutAddressUrl, hasActivePool } from '../utils/uniswap';
 import { RemoveLiquidityModal } from './RemoveLiquidityModal';
 
 interface PortfolioViewProps {
@@ -477,8 +477,8 @@ export const PortfolioView: React.FC<PortfolioViewProps> = ({
                                 {/* Actions */}
                                 <td className="py-3.5 px-4 text-right">
                                   <div className="flex items-center justify-end gap-1.5 font-sans">
-                                    {/* Direct Uniswap Sell for ETH Link */}
-                                    {(h.asset?.tokenAddress || h.asset?.poolAddress) && (
+                                    {/* Direct Uniswap Sell for ETH Link (Only if AMM pool is live) */}
+                                    {h.asset?.tokenAddress && hasActivePool(h.asset) && (
                                       <a
                                         href={getUniswapSellUrl(h.asset?.tokenAddress)}
                                         target="_blank"

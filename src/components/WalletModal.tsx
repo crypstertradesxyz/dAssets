@@ -16,7 +16,7 @@ import { WalletState, AppView, LeveragedAsset, LiquidityPool } from '../types';
 import { Web3Service, ROBINHOOD_CHAIN } from '../services/web3';
 import { BridgeService } from '../services/bridge';
 import { CopyButton } from './CopyButton';
-import { getUniswapSellUrl } from '../utils/uniswap';
+import { getUniswapSellUrl, hasActivePool } from '../utils/uniswap';
 
 interface WalletModalProps {
   wallet: WalletState;
@@ -236,7 +236,7 @@ export const WalletModal: React.FC<WalletModalProps> = ({
 
                         {/* Quick Exit / Action Buttons */}
                         <div className="flex items-center justify-end gap-1.5 pt-1">
-                          {h.asset?.tokenAddress && (
+                          {h.asset?.tokenAddress && hasActivePool(h.asset) && (
                             <a
                               href={getUniswapSellUrl(h.asset.tokenAddress)}
                               target="_blank"

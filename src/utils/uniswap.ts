@@ -48,3 +48,64 @@ export function getBlockscoutAddressUrl(address: string): string {
 export function getBlockscoutTxUrl(txHash: string): string {
   return `https://robinhoodchain.blockscout.com/tx/${txHash}`;
 }
+
+/**
+ * Check whether an asset has an active, legitimate Uniswap pool deployed on Robinhood Chain.
+ * If true, the token is live for trading on Uniswap.
+ * If false, swapping on Uniswap will fail with "Insufficient liquidity" and user should Mint via Protocol first.
+ */
+export function hasActivePool(asset?: { symbol?: string; poolAddress?: string } | null): boolean {
+  if (!asset) return false;
+
+  // 1. Direct poolAddress property check on asset
+  if (asset.poolAddress && typeof asset.poolAddress === 'string') {
+    const addr = asset.poolAddress.trim().toLowerCase();
+    if (
+      addr.startsWith('0x') &&
+      addr.length === 42 &&
+      addr !== '0x0000000000000000000000000000000000000000' &&
+      !addr.startsWith('0x7a250d5630') &&
+      !addr.startsWith('0x3fc91a3a')
+    ) {
+      return true;
+    }
+  }
+
+  // 2. Check localStorage pools if in browser environment
+  if (typeof window !== 'undefined' && window.localStorage && asset.symbol) {
+    try {
+      const savedPools = JSON.parse(localStorage.getItem('dassets_uniswap_pools') || '[]');
+      if (Array.isArray(savedPools)) {
+        const found = savedPools.find(
+          (p: any) =>
+            p.assetSymbol?.toUpperCase() === asset.symbol?.toUpperCase() &&
+            p.poolAddress &&
+            typeof p.poolAddress === 'string' &&
+            p.poolAddress.startsWith('0x') &&
+            p.poolAddress.length === 42 &&
+            !p.poolAddress.startsWith('0x7a250d5630') &&
+            !p.poolAddress.startsWith('0x3fc91a3a')
+        );
+        if (found) return true;
+      }
+
+      const deployed = JSON.parse(localStorage.getItem('dassets_deployed_tokens') || '{}');
+      if (deployed[asset.symbol]?.poolAddress) {
+        const poolAddr = String(deployed[asset.symbol].poolAddress).toLowerCase();
+        if (
+          poolAddr.startsWith('0x') &&
+          poolAddr.length === 42 &&
+          poolAddr !== '0x0000000000000000000000000000000000000000' &&
+          !poolAddr.startsWith('0x7a250d5630') &&
+          !poolAddr.startsWith('0x3fc91a3a')
+        ) {
+          return true;
+        }
+      }
+    } catch (e) {
+      // LocalStorage read error fallback
+    }
+  }
+
+  return false;
+}

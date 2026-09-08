@@ -21,13 +21,14 @@ import {
 } from 'lucide-react';
 import { LeveragedAsset, WalletState, AppView } from '../types';
 import { TokenLogo } from './TokenLogo';
-import { getUniswapSwapUrl, getUniswapSellUrl } from '../utils/uniswap';
+import { getUniswapSwapUrl, getUniswapSellUrl, hasActivePool } from '../utils/uniswap';
 
 interface TradeViewProps {
   assets: LeveragedAsset[];
   wallet: WalletState;
   onOpenWalletModal: () => void;
   onMintAsset: (asset: LeveragedAsset, initialTab?: 'mint' | 'redeem') => void;
+  onSeedPool?: (asset: LeveragedAsset) => void;
   onNavigate: (view: AppView, asset?: LeveragedAsset) => void;
   initialAsset?: LeveragedAsset;
 }
@@ -37,6 +38,7 @@ export const TradeView: React.FC<TradeViewProps> = ({
   wallet,
   onOpenWalletModal,
   onMintAsset,
+  onSeedPool,
   onNavigate,
   initialAsset,
 }) => {
@@ -135,6 +137,9 @@ export const TradeView: React.FC<TradeViewProps> = ({
       return true;
     });
   }, [assets, selectorSearch, selectorFilter]);
+
+  // Check if selected token has an active Uniswap liquidity pool
+  const isPoolLive = useMemo(() => hasActivePool(selectedAsset), [selectedAsset]);
 
   // Uniswap preconfigured links
   const uniswapUrl = tradeDirection === 'buy'
@@ -350,8 +355,9 @@ export const TradeView: React.FC<TradeViewProps> = ({
             </div>
             <div className="flex justify-between text-slate-400">
               <span>Uniswap Pool State:</span>
-              <span className={`font-bold ${selectedAsset.poolAddress ? 'text-rh-green' : 'text-slate-400'}`}>
-                {selectedAsset.poolAddress ? 'Active Pool on Robinhood' : 'Unseeded (Use Protocol NAV)'}
+              <span className={`font-bold flex items-center gap-1.5 ${isPoolLive ? 'text-rh-green' : 'text-amber-400'}`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${isPoolLive ? 'bg-rh-green animate-pulse' : 'bg-amber-400'}`}></span>
+                {isPoolLive ? 'Active Pool on Robinhood' : 'Unseeded on Uniswap (Use Protocol NAV)'}
               </span>
             </div>
             <div className="flex justify-between text-slate-400">
@@ -360,47 +366,99 @@ export const TradeView: React.FC<TradeViewProps> = ({
             </div>
           </div>
 
-          {/* Action Buttons: Dual Route Execution */}
+          {/* Action Buttons: Conditional based on AMM Pool Status */}
           <div className="space-y-2.5 pt-2">
-            
-            {/* 1. Direct Uniswap Swap Link */}
-            <a
-              href={uniswapUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full flex items-center justify-center gap-2 bg-pink-500 hover:bg-pink-400 text-white font-bold py-3.5 px-4 rounded-xl text-xs transition shadow-lg cursor-pointer"
-            >
-              <img src="/logos/uni.png" alt="Uniswap" className="w-4 h-4 rounded-full" />
-              <span>
-                {tradeDirection === 'buy'
-                  ? `Swap on Uniswap (Buy ${selectedAsset.symbol}) ↗`
-                  : `Sell ${selectedAsset.symbol} for ETH on Uniswap ↗`
-                }
-              </span>
-              <ExternalLink className="w-3.5 h-3.5 opacity-80" />
-            </a>
+            {isPoolLive ? (
+              /* State 1: Active Pool Live -> Primary is Uniswap Trade, Secondary is Oracle NAV Mint/Redeem */
+              <>
+                {/* 1. Direct Uniswap Swap Link */}
+                <a
+                  href={uniswapUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full flex items-center justify-center gap-2 bg-pink-500 hover:bg-pink-400 text-white font-bold py-3.5 px-4 rounded-xl text-xs transition shadow-lg cursor-pointer"
+                >
+                  <img src="/logos/uni.png" alt="Uniswap" className="w-4 h-4 rounded-full" />
+                  <span>
+                    {tradeDirection === 'buy'
+                      ? `Trade on Uniswap (Buy ${selectedAsset.symbol}) ↗`
+                      : `Sell ${selectedAsset.symbol} for ETH on Uniswap ↗`
+                    }
+                  </span>
+                  <ExternalLink className="w-3.5 h-3.5 opacity-80" />
+                </a>
 
-            {/* 2. In-App Protocol Mint / Redeem at Oracle NAV */}
-            <button
-              onClick={() => onMintAsset(selectedAsset, tradeDirection === 'buy' ? 'mint' : 'redeem')}
-              className="w-full flex items-center justify-center gap-2 bg-white hover:bg-slate-200 text-black font-semibold py-3 px-4 rounded-xl text-xs transition shadow-sm"
-            >
-              {tradeDirection === 'buy' ? (
-                <>
-                  <Zap className="w-3.5 h-3.5 fill-current" />
-                  <span>Mint at Pyth Oracle NAV (Zero Slippage)</span>
-                </>
-              ) : (
-                <>
-                  <ArrowDownLeft className="w-3.5 h-3.5 text-rh-green" />
-                  <span>Redeem at Pyth Oracle NAV (Zero Slippage)</span>
-                </>
-              )}
-            </button>
+                {/* 2. In-App Protocol Mint / Redeem at Oracle NAV */}
+                <button
+                  onClick={() => onMintAsset(selectedAsset, tradeDirection === 'buy' ? 'mint' : 'redeem')}
+                  className="w-full flex items-center justify-center gap-2 bg-white hover:bg-slate-200 text-black font-semibold py-3 px-4 rounded-xl text-xs transition shadow-sm cursor-pointer"
+                >
+                  {tradeDirection === 'buy' ? (
+                    <>
+                      <Zap className="w-3.5 h-3.5 fill-current text-rh-green" />
+                      <span>Mint via Protocol at Pyth Oracle NAV (Zero Slippage)</span>
+                    </>
+                  ) : (
+                    <>
+                      <ArrowDownLeft className="w-3.5 h-3.5 text-rh-green" />
+                      <span>Redeem via Protocol at Pyth Oracle NAV (Zero Slippage)</span>
+                    </>
+                  )}
+                </button>
 
-            <p className="text-[11px] text-center text-slate-500 font-sans pt-1">
-              Uniswap executes instant market AMM swaps. Protocol Mint/Redeem executes direct on-chain minting or burning at exact Pyth oracle NAV.
-            </p>
+                <p className="text-[11px] text-center text-slate-500 font-sans pt-1">
+                  Uniswap pool is live! Instant market AMM swap via Uniswap, or zero-slippage mint/burn directly via protocol vault.
+                </p>
+              </>
+            ) : (
+              /* State 2: Pool Not Live (Unseeded) -> Primary is Protocol Mint/Redeem, Secondary is Seed Pool */
+              <>
+                {/* Informative notice explaining why AMM swap isn't shown */}
+                <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-200 space-y-1">
+                  <div className="flex items-center gap-1.5 font-bold text-amber-300">
+                    <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
+                    <span>Pool Not Yet Seeded on Uniswap</span>
+                  </div>
+                  <p className="text-[11px] text-amber-200/80 leading-relaxed font-sans">
+                    {selectedAsset.symbol} does not have an active AMM pool on Uniswap yet. 
+                    <strong> Mint directly via the protocol vault at exact Pyth Oracle NAV</strong> below, or <strong>seed the initial pool</strong> to enable Uniswap trading.
+                  </p>
+                </div>
+
+                {/* Primary Button: Protocol Vault Mint/Redeem */}
+                <button
+                  onClick={() => onMintAsset(selectedAsset, tradeDirection === 'buy' ? 'mint' : 'redeem')}
+                  className="w-full flex items-center justify-center gap-2 bg-rh-green hover:bg-rh-green/90 text-black font-bold py-3.5 px-4 rounded-xl text-xs transition shadow-lg cursor-pointer"
+                >
+                  {tradeDirection === 'buy' ? (
+                    <>
+                      <Zap className="w-4 h-4 fill-current" />
+                      <span>Mint {selectedAsset.symbol} at Pyth Oracle NAV</span>
+                    </>
+                  ) : (
+                    <>
+                      <ArrowDownLeft className="w-4 h-4" />
+                      <span>Redeem {selectedAsset.symbol} at Pyth Oracle NAV</span>
+                    </>
+                  )}
+                </button>
+
+                {/* Secondary Button: Seed Uniswap Pool */}
+                {onSeedPool && (
+                  <button
+                    onClick={() => onSeedPool(selectedAsset)}
+                    className="w-full flex items-center justify-center gap-2 bg-pink-500/15 hover:bg-pink-500/25 text-pink-300 hover:text-pink-200 border border-pink-500/30 font-semibold py-3 px-4 rounded-xl text-xs transition cursor-pointer"
+                  >
+                    <img src="/logos/uni.png" alt="Uniswap" className="w-3.5 h-3.5 rounded-full" />
+                    <span>Seed Uniswap Liquidity Pool for {selectedAsset.symbol}</span>
+                  </button>
+                )}
+
+                <p className="text-[11px] text-center text-slate-500 font-sans pt-1">
+                  Direct vault minting issues synthetic tokens against backing collateral at exact Pyth Oracle NAV with zero AMM slippage.
+                </p>
+              </>
+            )}
           </div>
 
         </div>

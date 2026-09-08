@@ -151,6 +151,7 @@ export const App: React.FC = () => {
               onExploreMarkets={() => navigateTo('markets')}
               onSelectAsset={handleSelectAsset}
               onMintAsset={handleOpenMint}
+              onSeedPool={(asset) => setSeedPoolAsset(asset)}
               onOpenContracts={() => navigateTo('contracts')}
               onNavigate={navigateTo}
             />
@@ -164,6 +165,7 @@ export const App: React.FC = () => {
               wallet={wallet}
               onOpenWalletModal={() => setIsWalletModalOpen(true)}
               onMintAsset={handleOpenMint}
+              onSeedPool={(asset) => setSeedPoolAsset(asset)}
               onNavigate={navigateTo}
               initialAsset={selectedAsset}
             />

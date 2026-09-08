@@ -13,7 +13,7 @@ import { OracleService } from '../services/oracle';
 import { CopyButton } from './CopyButton';
 import { KeeperTerminal } from './KeeperTerminal';
 import { TokenLogo } from './TokenLogo';
-import { getUniswapSwapUrl, getUniswapSellUrl } from '../utils/uniswap';
+import { getUniswapSwapUrl, getUniswapSellUrl, hasActivePool } from '../utils/uniswap';
 
 interface OracleTerminalProps {
   asset: LeveragedAsset;
@@ -35,6 +35,7 @@ export const OracleTerminal: React.FC<OracleTerminalProps> = ({
   const [timeframe, setTimeframe] = useState<'1H' | '24H' | '7D'>('24H');
   const [countdown, setCountdown] = useState({ hours: 0, minutes: 0, seconds: 0 });
   const userHolding = wallet.holdings?.[asset.symbol] || 0;
+  const isLive = hasActivePool(asset);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -168,11 +169,11 @@ export const OracleTerminal: React.FC<OracleTerminalProps> = ({
 
             <div>
               <div className="text-[10px] text-slate-500 uppercase tracking-wider font-sans font-medium">AMM Pool Status</div>
-              <div className="text-base font-bold text-slate-300 mt-0.5">
-                {asset.poolAddress ? 'Active Pool' : 'Unseeded AMM'}
+              <div className={`text-base font-bold mt-0.5 ${isLive ? 'text-rh-green' : 'text-slate-300'}`}>
+                {isLive ? 'Active Pool' : 'Unseeded AMM'}
               </div>
               <div className="text-[10px] text-slate-500">
-                {asset.poolAddress ? 'Trading Live' : 'Mint via Factory'}
+                {isLive ? 'Trading Live on Uniswap' : 'Mint via Protocol Vault'}
               </div>
             </div>
 
@@ -189,7 +190,12 @@ export const OracleTerminal: React.FC<OracleTerminalProps> = ({
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => onMintAsset(asset, 'mint')}
-                className="flex items-center gap-1.5 bg-white hover:bg-slate-200 text-black font-semibold px-3.5 py-2 rounded-md text-xs transition shadow-sm"
+                className={`flex items-center gap-1.5 font-bold px-3.5 py-2 rounded-md text-xs transition shadow-sm cursor-pointer ${
+                  !isLive 
+                    ? 'bg-rh-green hover:bg-rh-green/90 text-black shadow-md' 
+                    : 'bg-white hover:bg-slate-200 text-black'
+                }`}
+                title="Mint synthetic tokens at exact Pyth Oracle NAV"
               >
                 <Zap className="w-3.5 h-3.5 fill-current" />
                 <span>Mint</span>
@@ -200,56 +206,62 @@ export const OracleTerminal: React.FC<OracleTerminalProps> = ({
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => onMintAsset(asset, 'redeem')}
-                className="flex items-center gap-1.5 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 hover:text-emerald-300 border border-emerald-500/30 px-3.5 py-2 rounded-md text-xs font-semibold transition"
+                className="flex items-center gap-1.5 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 hover:text-emerald-300 border border-emerald-500/30 px-3.5 py-2 rounded-md text-xs font-semibold transition cursor-pointer"
                 title="Burn tokens to settle at live Oracle NAV without slippage"
               >
                 <ArrowDownLeft className="w-3.5 h-3.5" />
                 <span>Redeem (NAV)</span>
               </motion.button>
 
-              {/* Sell for ETH on Uniswap */}
-              {(asset.tokenAddress || asset.poolAddress) && (
-                <motion.a
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  href={getUniswapSellUrl(asset.tokenAddress)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 bg-pink-500/15 hover:bg-pink-500/25 text-pink-300 hover:text-pink-200 border border-pink-500/30 px-3.5 py-2 rounded-md text-xs font-semibold transition cursor-pointer shadow-sm"
-                  title="Sell back for native Robinhood Chain ETH on Uniswap"
-                >
-                  <img src="/logos/uni.png" alt="Uniswap" className="w-3.5 h-3.5 rounded-full" />
-                  <span>Sell for ETH</span>
-                  <ExternalLink className="w-2.5 h-2.5 opacity-70" />
-                </motion.a>
+              {/* If Pool is Live: Show Uniswap Trade & Sell links */}
+              {isLive && (
+                <>
+                  {/* Sell for ETH on Uniswap */}
+                  <motion.a
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    href={getUniswapSellUrl(asset.tokenAddress)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 bg-pink-500/15 hover:bg-pink-500/25 text-pink-300 hover:text-pink-200 border border-pink-500/30 px-3.5 py-2 rounded-md text-xs font-semibold transition cursor-pointer shadow-sm"
+                    title="Sell back for native Robinhood Chain ETH on Uniswap"
+                  >
+                    <img src="/logos/uni.png" alt="Uniswap" className="w-3.5 h-3.5 rounded-full" />
+                    <span>Sell for ETH</span>
+                    <ExternalLink className="w-2.5 h-2.5 opacity-70" />
+                  </motion.a>
+
+                  {/* Trade / Buy on Uniswap */}
+                  <motion.a
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    href={getUniswapSwapUrl(asset.tokenAddress)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 bg-pink-500 hover:bg-pink-400 text-white px-3.5 py-2 rounded-md text-xs font-bold transition cursor-pointer shadow-sm"
+                    title="Trade / Buy on Uniswap"
+                  >
+                    <img src="/logos/uni.png" alt="Uniswap" className="w-3.5 h-3.5 rounded-full" />
+                    <span>Trade Uniswap</span>
+                    <ExternalLink className="w-2.5 h-2.5 opacity-80" />
+                  </motion.a>
+                </>
               )}
 
-              {/* Buy on Uniswap */}
-              {(asset.tokenAddress || asset.poolAddress) && (
-                <motion.a
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  href={getUniswapSwapUrl(asset.tokenAddress)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 bg-white/[0.06] hover:bg-white/[0.12] text-slate-300 px-3 py-2 rounded-md text-xs font-medium transition cursor-pointer"
-                  title="Buy on Uniswap"
-                >
-                  <img src="/logos/uni.png" alt="Uniswap" className="w-3.5 h-3.5 rounded-full opacity-80" />
-                  <span>Trade / Buy</span>
-                  <ExternalLink className="w-2.5 h-2.5 opacity-60" />
-                </motion.a>
-              )}
-
-              {/* Seed Pool */}
+              {/* Seed / Add LP */}
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => onSeedPool(asset)}
-                className="flex items-center gap-1.5 bg-white/[0.06] hover:bg-white/[0.12] text-slate-300 px-3 py-2 rounded-md text-xs font-medium transition"
+                className={`flex items-center gap-1.5 px-3.5 py-2 rounded-md text-xs font-semibold transition cursor-pointer ${
+                  !isLive
+                    ? 'bg-pink-500/20 hover:bg-pink-500/30 text-pink-300 border border-pink-500/40 shadow-sm'
+                    : 'bg-white/[0.06] hover:bg-white/[0.12] text-slate-300'
+                }`}
+                title="Seed or add liquidity to Uniswap AMM pool"
               >
                 <Droplets className="w-3.5 h-3.5 text-rh-green" />
-                <span>Seed LP</span>
+                <span>{isLive ? 'Add LP' : 'Seed Pool'}</span>
               </motion.button>
             </div>
           </div>
