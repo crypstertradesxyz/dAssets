@@ -82,16 +82,6 @@ const baseAssets: BaseAssetConfig[] = [
   { underlying: 'FARTCOIN', name: 'Fartcoin', category: 'meme', spotPrice: 0.95, iconColor: '#A855F7', leverages: [2, 3, 5, -1, -2] },
 ];
 
-function generateHash(str: string): string {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    hash = (hash << 5) - hash + str.charCodeAt(i);
-    hash |= 0;
-  }
-  const hex = Math.abs(hash).toString(16).padStart(8, '0');
-  return `0x${hex}47d${hex}9c2b${hex}3e1a`.padEnd(42, '0');
-}
-
 export const INITIAL_ASSETS: LeveragedAsset[] = [];
 
 baseAssets.forEach((asset) => {
@@ -102,23 +92,16 @@ baseAssets.forEach((asset) => {
     const symbol = `d${asset.underlying}${suffix}`;
     const name = `${asset.name} ${absLev}x ${isShort ? 'Short' : 'Long'}`;
 
-    // Standard base NAV for leveraged tokens on Bounce.tech is $1.00
+    // Standard initial NAV for leveraged tokens on Bounce.tech is $1.00
     const baseNav = 1.00;
-    // Generate deterministic pseudo-realistic 24h change & volume
-    const seed = (asset.spotPrice * 13 + absLev * 7 + (isShort ? 31 : 17)) % 100;
-    const change24h = ((seed - 48) / 10) * absLev;
-    const volume24h = Math.round((120000 + (seed * 85000)) * (asset.category === 'majors' ? 6 : 1));
-    const fundingRate = Number(((seed % 7) * 0.003 - 0.009).toFixed(4));
-    const openInterest = Math.round(volume24h * 1.8);
+    const change24h = 0.0;
+    const volume24h = 0;
+    const fundingRate = 0.0;
+    const openInterest = 0;
 
-    // Initial pre-minted status for key popular pairs so user sees active ecosystem immediately
-    const isPreMinted = (asset.underlying === 'BTC' || asset.underlying === 'ETH' || asset.underlying === 'SOL' || asset.underlying === 'HYPE') && absLev === 3;
-    let tokenAddress = isPreMinted ? generateHash(symbol) : undefined;
-    if (symbol === 'dBTC3L') {
-      tokenAddress = '0x5164E1dc1Be45a0Fbe4D6A25A4713225E9bb56F6';
-    }
-    const poolAddress = isPreMinted ? generateHash(`${symbol}-USDC-POOL`) : undefined;
-    const poolLiquidity = isPreMinted ? Math.round(500000 + seed * 12000) : undefined;
+    // dBTC3L is the verified deployed flagship token on Robinhood Chain Mainnet (Chain 4663)
+    const isPreMinted = symbol === 'dBTC3L';
+    const tokenAddress = isPreMinted ? '0x5164E1dc1Be45a0Fbe4D6A25A4713225E9bb56F6' : undefined;
 
     INITIAL_ASSETS.push({
       id: symbol.toLowerCase(),
@@ -130,17 +113,17 @@ baseAssets.forEach((asset) => {
       isShort,
       category: asset.category,
       baseNav,
-      currentNav: Number((baseNav * (1 + change24h / 100)).toFixed(2)),
+      currentNav: baseNav,
       indexPrice: asset.spotPrice,
-      change24h: Number(change24h.toFixed(2)),
+      change24h,
       volume24h,
       fundingRate,
       openInterest,
       isMinted: isPreMinted,
       tokenAddress,
-      poolAddress,
-      poolLiquidity,
-      hyperevmAddress: generateHash(`hyperevm-${symbol}`),
+      poolAddress: undefined,
+      poolLiquidity: undefined,
+      hyperevmAddress: `hyperevm-${symbol.toLowerCase()}`,
       iconColor: asset.iconColor,
     });
   });

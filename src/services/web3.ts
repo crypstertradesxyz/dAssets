@@ -32,25 +32,27 @@ export class Web3Service {
     address: null,
     chainId: ROBINHOOD_CHAIN.chainId,
     networkName: ROBINHOOD_CHAIN.name,
-    balanceEth: '10.50',
-    balanceUsdc: '50,000.00',
+    balanceEth: '0.00',
+    balanceUsdc: '0.00',
     isDemo: false,
     holdings: {},
   };
   private subscribers: ((state: WalletState) => void)[] = [];
 
   private constructor() {
-    const savedDemo = localStorage.getItem('dassets_demo_mode');
-    const savedHoldings = localStorage.getItem('dassets_holdings');
-    if (savedHoldings) {
-      try {
-        this.state.holdings = JSON.parse(savedHoldings);
-      } catch (e) {
-        this.state.holdings = {};
-      }
-    }
-    if (savedDemo === 'true') {
-      this.enableDemoMode();
+    // Check if wallet is already connected
+    if (typeof window !== 'undefined' && (window as any).ethereum) {
+      const eth = (window as any).ethereum;
+      eth.on?.('accountsChanged', (accounts: string[]) => {
+        if (!accounts || accounts.length === 0) {
+          this.disconnect();
+        } else {
+          this.refreshBalances(accounts[0]);
+        }
+      });
+      eth.on?.('chainChanged', () => {
+        window.location.reload();
+      });
     }
   }
 
@@ -70,43 +72,62 @@ export class Web3Service {
   }
 
   private notify() {
-    localStorage.setItem('dassets_holdings', JSON.stringify(this.state.holdings));
     this.subscribers.forEach(cb => cb({ ...this.state }));
   }
 
-  public enableDemoMode() {
-    const savedHoldings = localStorage.getItem('dassets_holdings');
-    let loadedHoldings = this.state.holdings || {};
-    if (savedHoldings) {
-      try {
-        loadedHoldings = JSON.parse(savedHoldings);
-      } catch (e) {}
-    }
+  public async refreshBalances(accountAddress: string) {
+    const eth = (window as any).ethereum;
+    if (!eth) return;
 
-    this.state = {
-      isConnected: true,
-      address: '0x71C...89A4',
-      chainId: ROBINHOOD_CHAIN.chainId,
-      networkName: ROBINHOOD_CHAIN.name,
-      balanceEth: '14.85',
-      balanceUsdc: '50,000.00',
-      isDemo: true,
-      holdings: loadedHoldings,
-    };
-    localStorage.setItem('dassets_demo_mode', 'true');
-    this.notify();
+    try {
+      const provider = new ethers.BrowserProvider(eth);
+      const balanceWei = await provider.getBalance(accountAddress);
+      const ethVal = parseFloat(ethers.formatEther(balanceWei));
+      const formattedEth = ethVal.toFixed(4);
+
+      // Query genuine dBTC3L token balance on Robinhood Chain
+      const holdings: Record<string, number> = {};
+      try {
+        const flagshipAddress = '0x5164E1dc1Be45a0Fbe4D6A25A4713225E9bb56F6';
+        const tokenContract = new ethers.Contract(
+          flagshipAddress,
+          ['function balanceOf(address) view returns (uint256)'],
+          provider
+        );
+        const tokenBalWei = await tokenContract.balanceOf(accountAddress);
+        const tokenQty = parseFloat(ethers.formatUnits(tokenBalWei, 18));
+        if (tokenQty > 0) {
+          holdings['dBTC3L'] = tokenQty;
+        }
+      } catch (err) {
+        // Token contract query silent fallback
+      }
+
+      this.state = {
+        ...this.state,
+        isConnected: true,
+        address: `${accountAddress.slice(0, 6)}...${accountAddress.slice(-4)}`,
+        balanceEth: formattedEth,
+        holdings,
+      };
+      this.notify();
+    } catch (err) {
+      console.warn('Error querying on-chain balance:', err);
+    }
   }
 
   public async connectInjected(type: 'robinhood' | 'metamask' | 'rabby' = 'robinhood') {
     const eth = (window as any).ethereum;
     if (!eth) {
-      this.enableDemoMode();
+      alert('No Web3 wallet detected. Please install MetaMask, Rabby, or Robinhood Wallet.');
       return;
     }
 
     try {
       const accounts = await eth.request({ method: 'eth_requestAccounts' });
-      
+      if (!accounts || accounts.length === 0) return;
+
+      // Switch or Add Robinhood Chain Mainnet (Chain ID 4663 / 0x1237)
       try {
         await eth.request({
           method: 'wallet_switchEthereumChain',
@@ -134,29 +155,45 @@ export class Web3Service {
       const chainIdHex = await eth.request({ method: 'eth_chainId' });
       const currentChainId = parseInt(chainIdHex, 16);
 
-      const savedHoldings = localStorage.getItem('dassets_holdings');
-      let loadedHoldings = this.state.holdings || {};
-      if (savedHoldings) {
-        try {
-          loadedHoldings = JSON.parse(savedHoldings);
-        } catch (e) {}
+      const provider = new ethers.BrowserProvider(eth);
+      let balanceEthFormatted = '0.00';
+      try {
+        const balWei = await provider.getBalance(accounts[0]);
+        balanceEthFormatted = parseFloat(ethers.formatEther(balWei)).toFixed(4);
+      } catch (e) {
+        console.warn('Could not read ETH balance:', e);
+      }
+
+      const holdings: Record<string, number> = {};
+      try {
+        const flagshipAddress = '0x5164E1dc1Be45a0Fbe4D6A25A4713225E9bb56F6';
+        const tokenContract = new ethers.Contract(
+          flagshipAddress,
+          ['function balanceOf(address) view returns (uint256)'],
+          provider
+        );
+        const tokenBalWei = await tokenContract.balanceOf(accounts[0]);
+        const tokenQty = parseFloat(ethers.formatUnits(tokenBalWei, 18));
+        if (tokenQty > 0) {
+          holdings['dBTC3L'] = tokenQty;
+        }
+      } catch (err) {
+        // ignore
       }
 
       this.state = {
         isConnected: true,
-        address: accounts[0] ? `${accounts[0].slice(0, 6)}...${accounts[0].slice(-4)}` : '0xUnknown',
+        address: `${accounts[0].slice(0, 6)}...${accounts[0].slice(-4)}`,
         chainId: currentChainId,
         networkName: currentChainId === ROBINHOOD_CHAIN.chainId ? ROBINHOOD_CHAIN.name : 'Unknown Network',
-        balanceEth: '4.20',
-        balanceUsdc: '12,450.00',
+        balanceEth: balanceEthFormatted,
+        balanceUsdc: '0.00',
         isDemo: false,
-        holdings: loadedHoldings,
+        holdings,
       };
-      localStorage.removeItem('dassets_demo_mode');
       this.notify();
-    } catch (err) {
-      console.error('Connection failed, falling back to Demo Mode:', err);
-      this.enableDemoMode();
+    } catch (err: any) {
+      console.error('Wallet connection rejected or failed:', err);
     }
   }
 
@@ -169,36 +206,32 @@ export class Web3Service {
       balanceEth: '0.00',
       balanceUsdc: '0.00',
       isDemo: false,
-      holdings: this.state.holdings || {},
+      holdings: {},
     };
-    localStorage.removeItem('dassets_demo_mode');
-    this.subscribers.forEach(cb => cb({ ...this.state }));
+    this.notify();
   }
 
-  public recordMint(symbol: string, amount: number, usdcCost: number) {
-    const currentUsdc = parseFloat(this.state.balanceUsdc.replace(/,/g, ''));
-    const nextUsdc = Math.max(0, currentUsdc - usdcCost);
-    this.state.balanceUsdc = nextUsdc.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    
+  public recordMint(symbol: string, amount: number, _usdcCost: number) {
     const currentHolding = this.state.holdings[symbol] || 0;
     this.state.holdings[symbol] = currentHolding + amount;
     this.notify();
+
+    // Re-query real on-chain balance
+    const eth = (window as any).ethereum;
+    if (eth && eth.selectedAddress) {
+      this.refreshBalances(eth.selectedAddress);
+    }
   }
 
-  public recordRedeem(symbol: string, amount: number, usdcProceeds: number) {
+  public recordRedeem(symbol: string, amount: number, _usdcProceeds: number) {
     const currentHolding = this.state.holdings[symbol] || 0;
     this.state.holdings[symbol] = Math.max(0, currentHolding - amount);
-
-    const currentUsdc = parseFloat(this.state.balanceUsdc.replace(/,/g, ''));
-    const nextUsdc = currentUsdc + usdcProceeds;
-    this.state.balanceUsdc = nextUsdc.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     this.notify();
-  }
 
-  public deductUsdc(amount: number) {
-    const current = parseFloat(this.state.balanceUsdc.replace(/,/g, ''));
-    const next = Math.max(0, current - amount);
-    this.state.balanceUsdc = next.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    this.notify();
+    const eth = (window as any).ethereum;
+    if (eth && eth.selectedAddress) {
+      this.refreshBalances(eth.selectedAddress);
+    }
   }
 }
+

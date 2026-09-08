@@ -126,8 +126,8 @@ export const PoolsView: React.FC<PoolsViewProps> = ({
             <div className="text-xl sm:text-2xl font-bold text-white">
               ${totalVolume.toLocaleString('en-US', { maximumFractionDigits: 0 })}
             </div>
-            <span className="text-[10px] text-rh-green font-sans flex items-center gap-0.5">
-              <TrendingUp className="w-3 h-3" /> +14.2% vs yesterday
+            <span className="text-[10px] text-slate-400 font-sans">
+              Robinhood Chain (4663)
             </span>
           </div>
 
@@ -138,7 +138,7 @@ export const PoolsView: React.FC<PoolsViewProps> = ({
             <div className="text-xl sm:text-2xl font-bold text-rh-green">
               {maxApr.toFixed(1)}% APR
             </div>
-            <span className="text-[10px] text-slate-400 font-sans">Fee tier yields</span>
+            <span className="text-[10px] text-slate-400 font-sans">Concentrated fee tiers</span>
           </div>
 
           <div className="bg-[#090C10] border border-white/[0.08] rounded-lg p-4 space-y-1">
@@ -154,97 +154,123 @@ export const PoolsView: React.FC<PoolsViewProps> = ({
         </div>
       </div>
 
-      {/* Featured Pools Grid */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h3 className="text-xs uppercase font-bold tracking-wider text-slate-400 font-sans flex items-center gap-2">
-            <Sparkles className="w-3.5 h-3.5 text-rh-green" />
-            <span>Featured High-Yield Pools</span>
-          </h3>
-          <span className="text-[11px] text-slate-500 font-mono">Real-Time Oracle Balanced</span>
+      {pools.length === 0 ? (
+        <div className="bg-[#090C10] border border-white/[0.08] rounded-2xl p-8 sm:p-14 text-center space-y-4">
+          <div className="w-12 h-12 rounded-full bg-white/[0.04] border border-white/[0.08] flex items-center justify-center mx-auto text-rh-green">
+            <Droplets className="w-6 h-6" />
+          </div>
+          <div className="space-y-1.5 max-w-md mx-auto">
+            <h2 className="text-base sm:text-lg font-bold text-white font-display">
+              No Active Liquidity Pools on Robinhood Chain
+            </h2>
+            <p className="text-xs text-slate-400 font-sans leading-relaxed">
+              No AMM pairs have been funded on Robinhood Chain Mainnet (4663) yet. Be the first liquidity provider to seed a pool and earn swap fees on leveraged dAssets.
+            </p>
+          </div>
+          <div className="pt-2">
+            <button
+              onClick={() => handleOpenCreate()}
+              className="inline-flex items-center gap-2 bg-white hover:bg-slate-100 text-black font-semibold text-xs px-5 py-2.5 rounded-lg transition shadow-sm"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Seed First AMM Pool</span>
+            </button>
+          </div>
         </div>
+      ) : (
+        <>
+          {/* Featured Pools Grid */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs uppercase font-bold tracking-wider text-slate-400 font-sans flex items-center gap-2">
+                <Sparkles className="w-3.5 h-3.5 text-rh-green" />
+                <span>Featured Pools</span>
+              </h3>
+              <span className="text-[11px] text-slate-500 font-mono">Live On-Chain Pools</span>
+            </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {pools.slice(0, 3).map((pool, idx) => {
-            const asset = assets.find(a => a.symbol === pool.assetSymbol);
-            return (
-              <motion.div
-                key={pool.poolAddress}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: idx * 0.05 }}
-                className="bg-[#090C10] border border-white/[0.08] hover:border-white/[0.18] rounded-xl p-5 space-y-4 transition group relative overflow-hidden"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2.5">
-                    <div 
-                      className="w-8 h-8 rounded-md flex items-center justify-center font-bold text-xs"
-                      style={{
-                        backgroundColor: asset ? `${asset.iconColor}20` : '#38BDF820',
-                        color: asset ? asset.iconColor : '#38BDF8',
-                        border: `1px solid ${asset ? asset.iconColor : '#38BDF8'}40`,
-                      }}
-                    >
-                      {pool.assetSymbol.replace('d', '').slice(0, 3)}
-                    </div>
-                    <div>
-                      <div className="font-bold text-white text-sm font-mono flex items-center gap-1.5">
-                        <span>{pool.assetSymbol}</span>
-                        <span className="text-slate-500">/</span>
-                        <span className="text-slate-300">{pool.pairedSymbol || 'USDC'}</span>
-                      </div>
-                      <div className="text-[10px] text-slate-400 font-sans">
-                        Uniswap v3 • {pool.feeTier || '0.30%'}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="text-right">
-                    <span className="text-[10px] uppercase text-slate-500 font-mono block">Estimated APR</span>
-                    <span className="text-base font-bold text-rh-green font-mono">{pool.apr}%</span>
-                  </div>
-                </div>
-
-                {/* Pool metrics */}
-                <div className="grid grid-cols-2 gap-2 bg-black/30 border border-white/[0.04] p-2.5 rounded-lg text-xs font-mono">
-                  <div>
-                    <span className="text-[10px] text-slate-500 block font-sans">Liquidity (TVL)</span>
-                    <span className="font-semibold text-white">
-                      ${(pool.tvlUsd || pool.usdcAmount * 2).toLocaleString()}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-slate-500 block font-sans">24h Volume</span>
-                    <span className="font-semibold text-slate-200">
-                      ${(pool.volume24h || 0).toLocaleString()}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Card actions */}
-                <div className="flex items-center gap-2 pt-1">
-                  <button
-                    onClick={() => handleOpenCreate(asset)}
-                    className="flex-1 bg-white/[0.06] hover:bg-white/[0.12] text-white py-2 px-3 rounded-md text-xs font-semibold transition flex items-center justify-center gap-1.5"
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {pools.slice(0, 3).map((pool, idx) => {
+                const asset = assets.find(a => a.symbol === pool.assetSymbol);
+                return (
+                  <motion.div
+                    key={pool.poolAddress}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: idx * 0.05 }}
+                    className="bg-[#090C10] border border-white/[0.08] hover:border-white/[0.18] rounded-xl p-5 space-y-4 transition group relative overflow-hidden"
                   >
-                    <Plus className="w-3.5 h-3.5 text-rh-green" />
-                    <span>Add Liquidity</span>
-                  </button>
-                  <a
-                    href={`https://robinhoodchain.blockscout.com/address/${pool.poolAddress}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="p-2 bg-white/[0.04] hover:bg-white/[0.08] rounded-md text-slate-400 hover:text-white transition"
-                    title="View Pool on Blockscout"
-                  >
-                    <ExternalLink className="w-3.5 h-3.5" />
-                  </a>
-                </div>
-              </motion.div>
-            );
-          })}
-        </div>
-      </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2.5">
+                        <div 
+                          className="w-8 h-8 rounded-md flex items-center justify-center font-bold text-xs"
+                          style={{
+                            backgroundColor: asset ? `${asset.iconColor}20` : '#38BDF820',
+                            color: asset ? asset.iconColor : '#38BDF8',
+                            border: `1px solid ${asset ? asset.iconColor : '#38BDF8'}40`,
+                          }}
+                        >
+                          {pool.assetSymbol.replace('d', '').slice(0, 3)}
+                        </div>
+                        <div>
+                          <div className="font-bold text-white text-sm font-mono flex items-center gap-1.5">
+                            <span>{pool.assetSymbol}</span>
+                            <span className="text-slate-500">/</span>
+                            <span className="text-slate-300">{pool.pairedSymbol || 'USDC'}</span>
+                          </div>
+                          <div className="text-[10px] text-slate-400 font-sans">
+                            Uniswap v3 • {pool.feeTier || '0.30%'}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="text-right">
+                        <span className="text-[10px] uppercase text-slate-500 font-mono block">Estimated APR</span>
+                        <span className="text-base font-bold text-rh-green font-mono">{pool.apr}%</span>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 bg-black/30 border border-white/[0.04] p-2.5 rounded-lg text-xs font-mono">
+                      <div>
+                        <span className="text-[10px] text-slate-500 block font-sans">Liquidity (TVL)</span>
+                        <span className="font-semibold text-white">
+                          ${(pool.tvlUsd || pool.usdcAmount * 2).toLocaleString()}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-slate-500 block font-sans">24h Volume</span>
+                        <span className="font-semibold text-slate-200">
+                          ${(pool.volume24h || 0).toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 pt-1">
+                      <button
+                        onClick={() => handleOpenCreate(asset)}
+                        className="flex-1 bg-white/[0.06] hover:bg-white/[0.12] text-white py-2 px-3 rounded-md text-xs font-semibold transition flex items-center justify-center gap-1.5"
+                      >
+                        <Plus className="w-3.5 h-3.5 text-rh-green" />
+                        <span>Add Liquidity</span>
+                      </button>
+                      <a
+                        href={`https://robinhoodchain.blockscout.com/address/${pool.poolAddress}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="p-2 bg-white/[0.04] hover:bg-white/[0.08] rounded-md text-slate-400 hover:text-white transition"
+                        title="View Pool on Blockscout"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </a>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </div>
+        </>
+      )}
+
 
       {/* Directory Section with Search & Categories */}
       <div className="space-y-4">

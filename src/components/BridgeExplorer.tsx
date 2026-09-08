@@ -103,60 +103,75 @@ export const BridgeExplorer: React.FC = () => {
           <span>Warp Route Execution Ledger</span>
           <span className="text-[11px] font-mono text-slate-500">{filtered.length} Dispatched</span>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse text-xs">
-            <thead>
-              <tr className="border-b border-white/[0.06] bg-[#07090D] text-[11px] font-mono text-slate-500 uppercase">
-                <th className="py-3 px-4">Time</th>
-                <th className="py-3 px-4">Route</th>
-                <th className="py-3 px-4">Minted Token</th>
-                <th className="py-3 px-4 text-right">Collateral</th>
-                <th className="py-3 px-4">Recipient</th>
-                <th className="py-3 px-4 text-right">Tx Hash</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/[0.04] font-mono">
-              {filtered.map((tx) => (
-                <tr key={tx.id} className="hover:bg-white/[0.02] transition">
-                  <td className="py-3 px-4 text-slate-400 text-[11px]">
-                    {new Date(tx.timestamp).toLocaleTimeString()}
-                  </td>
-                  <td className="py-3 px-4">
-                    <div className="flex items-center gap-1.5 text-[11px] font-sans">
-                      <span className="text-slate-300">HyperEVM</span>
-                      <ArrowRight className="w-3 h-3 text-rh-green" />
-                      <span className="text-white font-medium">Robinhood</span>
-                    </div>
-                  </td>
-                  <td className="py-3 px-4">
-                    <span className="text-white font-bold text-xs">{tx.amount} {tx.assetSymbol}</span>
-                  </td>
-                  <td className="py-3 px-4 text-right text-slate-300">
-                    ${tx.usdcPaid.toFixed(2)} USDC
-                  </td>
-                  <td className="py-3 px-4 text-slate-400">
-                    {tx.recipient.length > 14 ? `${tx.recipient.slice(0, 6)}...${tx.recipient.slice(-4)}` : tx.recipient}
-                  </td>
-                  <td className="py-3 px-4 text-right">
-                    <div className="flex items-center justify-end gap-1.5">
-                      <a
-                        href={`https://robinhoodchain.blockscout.com/tx/${tx.txHash}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-rh-green hover:underline flex items-center gap-1"
-                      >
-                        <span>{tx.txHash.slice(0, 6)}...{tx.txHash.slice(-4)}</span>
-                        <ExternalLink className="w-3 h-3" />
-                      </a>
-                      <CopyButton text={tx.txHash} />
-                    </div>
-                  </td>
+        {filtered.length === 0 ? (
+          <div className="py-16 text-center space-y-3 px-4">
+            <div className="w-10 h-10 rounded-full bg-white/[0.04] border border-white/[0.08] flex items-center justify-center mx-auto text-slate-400">
+              <Globe className="w-5 h-5" />
+            </div>
+            <div className="text-sm font-semibold text-white font-sans">
+              No Warp Route Transactions Recorded
+            </div>
+            <p className="text-xs text-slate-400 max-w-md mx-auto font-sans leading-relaxed">
+              Genuine interchain transfers between HyperEVM and Robinhood Chain will be indexed here with live Blockscout transaction receipts.
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr className="border-b border-white/[0.06] bg-[#07090D] text-[11px] font-mono text-slate-500 uppercase">
+                  <th className="py-3 px-4">Time</th>
+                  <th className="py-3 px-4">Route</th>
+                  <th className="py-3 px-4">Minted Token</th>
+                  <th className="py-3 px-4 text-right">Collateral</th>
+                  <th className="py-3 px-4">Recipient</th>
+                  <th className="py-3 px-4 text-right">Tx Hash</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="divide-y divide-white/[0.04] font-mono">
+                {filtered.map((tx) => (
+                  <tr key={tx.id} className="hover:bg-white/[0.02] transition">
+                    <td className="py-3 px-4 text-slate-400 text-[11px]">
+                      {new Date(tx.timestamp).toLocaleTimeString()}
+                    </td>
+                    <td className="py-3 px-4">
+                      <div className="flex items-center gap-1.5 text-[11px] font-sans">
+                        <span className="text-slate-300">HyperEVM</span>
+                        <ArrowRight className="w-3 h-3 text-rh-green" />
+                        <span className="text-white font-medium">Robinhood</span>
+                      </div>
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className="text-white font-bold text-xs">{tx.amount} {tx.assetSymbol}</span>
+                    </td>
+                    <td className="py-3 px-4 text-right text-slate-300">
+                      ${tx.usdcPaid.toFixed(2)} USDC
+                    </td>
+                    <td className="py-3 px-4 text-slate-400">
+                      {tx.recipient.length > 14 ? `${tx.recipient.slice(0, 6)}...${tx.recipient.slice(-4)}` : tx.recipient}
+                    </td>
+                    <td className="py-3 px-4 text-right">
+                      <div className="flex items-center justify-end gap-1.5">
+                        <a
+                          href={`https://robinhoodchain.blockscout.com/tx/${tx.txHash}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-rh-green hover:underline flex items-center gap-1"
+                        >
+                          <span>{tx.txHash.slice(0, 6)}...{tx.txHash.slice(-4)}</span>
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                        <CopyButton text={tx.txHash} />
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
+
 
     </div>
   );

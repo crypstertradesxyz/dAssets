@@ -8,147 +8,38 @@ export class BridgeService {
   private poolSubscribers: ((pools: LiquidityPool[]) => void)[] = [];
 
   private constructor() {
-    // Seed sample recent bridge activity for rich initial state
-    this.transactions = [
-      {
-        id: 'hl-tx-1094',
-        timestamp: Date.now() - 45000,
-        sourceChain: 'HyperEVM',
-        destChain: 'Robinhood Chain',
-        assetSymbol: 'dBTC3L',
-        amount: 25.0,
-        usdcPaid: 2500,
-        recipient: '0x38B...99F2',
-        status: 'minted',
-        txHash: '0x8f2d1e0b5c7a4e9b6d8f3c2a1e0b5c7a4e9b6d8f3c2a1e0b5c7a4e9b6d8f3c2a',
-        hyperlaneMessageId: '0x7e2a...981c',
-        ismSecurity: 'Hyperlane Multisig ISM (5/7 Validators Verified)',
-      },
-      {
-        id: 'hl-tx-1093',
-        timestamp: Date.now() - 180000,
-        sourceChain: 'HyperEVM',
-        destChain: 'Robinhood Chain',
-        assetSymbol: 'dETH3L',
-        amount: 150.0,
-        usdcPaid: 15000,
-        recipient: '0x71C...89A4',
-        status: 'minted',
-        txHash: '0x3c2a1e0b5c7a4e9b6d8f3c2a1e0b5c7a4e9b6d8f3c2a1e0b5c7a4e9b6d8f8f2d',
-        hyperlaneMessageId: '0x1b4a...44fe',
-        ismSecurity: 'Hyperlane Multisig ISM (5/7 Validators Verified)',
-      },
-      {
-        id: 'hl-tx-1092',
-        timestamp: Date.now() - 420000,
-        sourceChain: 'HyperEVM',
-        destChain: 'Robinhood Chain',
-        assetSymbol: 'dHYPE3L',
-        amount: 500.0,
-        usdcPaid: 5000,
-        recipient: '0x99A...12C8',
-        status: 'minted',
-        txHash: '0x9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d1e0f9a8b',
-        hyperlaneMessageId: '0x43ff...210a',
-        ismSecurity: 'Hyperlane Multisig ISM (5/7 Validators Verified)',
-      },
-    ];
-    // Pre-seeded Uniswap v3 AMM Liquidity Pools on Robinhood Chain
-    const defaultPools: LiquidityPool[] = [
-      {
-        poolAddress: '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D',
-        assetSymbol: 'dBTC3L',
-        pairedSymbol: 'USDC',
-        assetAmount: 48.5,
-        usdcAmount: 4326.2,
-        spotPrice: 89.2,
-        feeTier: '0.30%',
-        createdAt: Date.now() - 86400000 * 2,
-        creator: '0x31390C104d777c03B00E95967E3F2905993f947b',
-        apr: 32.4,
-        volume24h: 312500,
-        tvlUsd: 8652.4,
-        protocol: 'Uniswap v3',
-        txHash: '0x8f2d1e0b5c7a4e9b6d8f3c2a1e0b5c7a4e9b6d8f3c2a1e0b5c7a4e9b6d8f3c2a',
-      },
-      {
-        poolAddress: '0x3fC91A3afd70395Cd496C647d5a6CC9D4B2b7FAD',
-        assetSymbol: 'dETH3L',
-        pairedSymbol: 'USDC',
-        assetAmount: 320.0,
-        usdcAmount: 18560.0,
-        spotPrice: 58.0,
-        feeTier: '0.30%',
-        createdAt: Date.now() - 86400000 * 3,
-        creator: '0x0c19e8DE99BA135aBdc059b34e0d3F9E5e021fd0',
-        apr: 28.1,
-        volume24h: 489200,
-        tvlUsd: 37120.0,
-        protocol: 'Uniswap v3',
-        txHash: '0x3c2a1e0b5c7a4e9b6d8f3c2a1e0b5c7a4e9b6d8f3c2a1e0b5c7a4e9b6d8f8f2d',
-      },
-      {
-        poolAddress: '0xE592427A0AEce92De3Edee1F18E0157C05861564',
-        assetSymbol: 'dSOL5L',
-        pairedSymbol: 'USDC',
-        assetAmount: 640.0,
-        usdcAmount: 22400.0,
-        spotPrice: 35.0,
-        feeTier: '1.00%',
-        createdAt: Date.now() - 86400000,
-        creator: '0x5164E1dc1Be45a0Fbe4D6A25A4713225E9bb56F6',
-        apr: 41.6,
-        volume24h: 624100,
-        tvlUsd: 44800.0,
-        protocol: 'Uniswap v3',
-        txHash: '0x9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d1e0f9a8b',
-      },
-      {
-        poolAddress: '0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45',
-        assetSymbol: 'dHYPE3L',
-        pairedSymbol: 'USDC',
-        assetAmount: 1250.0,
-        usdcAmount: 12500.0,
-        spotPrice: 10.0,
-        feeTier: '0.30%',
-        createdAt: Date.now() - 43200000,
-        creator: '0x71C859132F2388A589A4',
-        apr: 36.8,
-        volume24h: 198000,
-        tvlUsd: 25000.0,
-        protocol: 'Uniswap v3',
-        txHash: '0x43ff210a5c7a4e9b6d8f3c2a1e0b5c7a4e9b6d8f3c2a1e0b5c7a4e9b6d8f43ff',
-      },
-      {
-        poolAddress: '0x1F98431c8aD98523631AE4a59f267346ea31F984',
-        assetSymbol: 'dDOGE3L',
-        pairedSymbol: 'USDC',
-        assetAmount: 45000.0,
-        usdcAmount: 9000.0,
-        spotPrice: 0.20,
-        feeTier: '1.00%',
-        createdAt: Date.now() - 21600000,
-        creator: '0x99A37281...12C8',
-        apr: 47.2,
-        volume24h: 142000,
-        tvlUsd: 18000.0,
-        protocol: 'Uniswap v3',
-        txHash: '0x1b4a44fe5c7a4e9b6d8f3c2a1e0b5c7a4e9b6d8f3c2a1e0b5c7a4e9b6d8f1b4a',
+    // Zero fake transactions - only legitimate user transactions recorded
+    const savedTxs = localStorage.getItem('dassets_real_txs');
+    if (savedTxs) {
+      try {
+        const parsed = JSON.parse(savedTxs);
+        if (Array.isArray(parsed)) {
+          this.transactions = parsed;
+        }
+      } catch (e) {
+        this.transactions = [];
       }
-    ];
+    } else {
+      this.transactions = [];
+    }
 
+    // Zero fake pools - only genuine on-chain pools created on Robinhood Chain
     const saved = localStorage.getItem('dassets_uniswap_pools');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        this.pools = Array.isArray(parsed) && parsed.length > 0 ? parsed : defaultPools;
+        if (Array.isArray(parsed)) {
+          // Filter out any leftover fake placeholder addresses (0x7a25..., 0x3fC9..., 0xE592...)
+          this.pools = parsed.filter(p => !p.poolAddress.startsWith('0x7a250d5630') && !p.poolAddress.startsWith('0x3fC91A3a'));
+        }
       } catch (e) {
-        this.pools = defaultPools;
+        this.pools = [];
       }
     } else {
-      this.pools = defaultPools;
+      this.pools = [];
     }
   }
+
 
   public static getInstance(): BridgeService {
     if (!BridgeService.instance) {
@@ -229,6 +120,14 @@ export class BridgeService {
     return tx;
   }
 
+  public recordRealTransaction(tx: BridgeTransaction) {
+    this.transactions.unshift(tx);
+    try {
+      localStorage.setItem('dassets_real_txs', JSON.stringify(this.transactions));
+    } catch (e) {}
+    this.notifyTx();
+  }
+
   public seedPool(
     symbol: string,
     assetAmount: number,
@@ -236,14 +135,15 @@ export class BridgeService {
     spotPrice: number,
     creator: string,
     feeTier: '0.05%' | '0.30%' | '1.00%' = '0.30%',
-    pairedSymbol: 'USDC' | 'ETH' = 'USDC'
+    pairedSymbol: 'USDC' | 'ETH' = 'USDC',
+    poolAddress?: string,
+    txHash?: string
   ): LiquidityPool {
-    const poolAddress = '0x' + Array.from({ length: 40 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
-    const txHash = '0x' + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+    const assignedPoolAddress = poolAddress || '';
     const tvlUsd = Number((usdcAmount * 2).toFixed(2));
     
     const pool: LiquidityPool = {
-      poolAddress,
+      poolAddress: assignedPoolAddress,
       assetSymbol: symbol,
       pairedSymbol,
       assetAmount,
@@ -252,11 +152,11 @@ export class BridgeService {
       feeTier,
       createdAt: Date.now(),
       creator,
-      apr: Number((22.5 + Math.random() * 24).toFixed(1)),
-      volume24h: Number((tvlUsd * (0.35 + Math.random() * 0.7)).toFixed(2)),
+      apr: 0,
+      volume24h: 0,
       tvlUsd,
       protocol: 'Uniswap v3',
-      txHash,
+      txHash: txHash || '',
     };
 
     this.pools.unshift(pool);
@@ -264,3 +164,4 @@ export class BridgeService {
     return pool;
   }
 }
+

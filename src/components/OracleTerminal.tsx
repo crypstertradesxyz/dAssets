@@ -38,20 +38,21 @@ export const OracleTerminal: React.FC<OracleTerminalProps> = ({
     return () => clearInterval(timer);
   }, []);
 
-  // Synthetic price points
+  // Deterministic chart trajectory based on current NAV and 24h change
   const chartPoints = useMemo(() => {
     const count = timeframe === '1H' ? 24 : timeframe === '24H' ? 48 : 70;
     const points: number[] = [];
-    let price = asset.currentNav * (1 - (asset.change24h / 100) * (timeframe === '1H' ? 0.2 : 0.8));
+    const changeFactor = asset.change24h / 100;
+    const startNav = asset.currentNav / (1 + changeFactor * (timeframe === '1H' ? 0.2 : 1.0));
     
     for (let i = 0; i < count; i++) {
-      const step = ((Math.random() - 0.48) * 0.02 * Math.abs(asset.leverage)) + ((asset.change24h / 100) / count);
-      price = Math.max(0.1, price * (1 + step));
-      points.push(price);
+      const progress = i / (count - 1);
+      // Smooth easing trajectory
+      const val = startNav + (asset.currentNav - startNav) * progress;
+      points.push(Math.max(0.01, Number(val.toFixed(4))));
     }
-    points[points.length - 1] = asset.currentNav;
     return points;
-  }, [asset.id, asset.currentNav, timeframe]);
+  }, [asset.id, asset.currentNav, asset.change24h, timeframe]);
 
   const minVal = Math.min(...chartPoints) * 0.99;
   const maxVal = Math.max(...chartPoints) * 1.01;
@@ -66,8 +67,6 @@ export const OracleTerminal: React.FC<OracleTerminalProps> = ({
     .join(' ');
 
   const isPositive = asset.change24h >= 0;
-  const ammSpread = Number(((Math.random() * 0.18) - 0.09).toFixed(2));
-  const ammPrice = Number((asset.currentNav * (1 + ammSpread / 100)).toFixed(2));
 
   return (
     <motion.div 
@@ -114,7 +113,7 @@ export const OracleTerminal: React.FC<OracleTerminalProps> = ({
               </div>
 
               <div className="flex flex-wrap items-center gap-3 text-xs text-slate-400 mt-1.5 font-mono">
-                <span>Spot: <strong className="text-slate-200">${asset.indexPrice.toLocaleString()}</strong></span>
+                <span>Spot: <strong className="text-slate-200">${asset.indexPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></span>
                 <span>•</span>
                 <span>Source: <strong className="text-slate-300">Bounce Perpetual Vaults</strong></span>
                 <span>•</span>
@@ -135,12 +134,12 @@ export const OracleTerminal: React.FC<OracleTerminalProps> = ({
             </div>
 
             <div>
-              <div className="text-[10px] text-slate-500 uppercase tracking-wider font-sans font-medium">AMM Spot Price</div>
-              <div className="text-2xl font-bold text-slate-200 mt-0.5">
-                ${ammPrice.toFixed(2)}
+              <div className="text-[10px] text-slate-500 uppercase tracking-wider font-sans font-medium">AMM Pool Status</div>
+              <div className="text-base font-bold text-slate-300 mt-0.5">
+                {asset.poolAddress ? 'Active Pool' : 'Unseeded AMM'}
               </div>
               <div className="text-[10px] text-slate-500">
-                Spread: {ammSpread >= 0 ? '+' : ''}{ammSpread}%
+                {asset.poolAddress ? 'Trading Live' : 'Mint via Factory'}
               </div>
             </div>
 
@@ -166,6 +165,7 @@ export const OracleTerminal: React.FC<OracleTerminalProps> = ({
               </motion.button>
             </div>
           </div>
+
 
         </div>
       </div>
@@ -239,18 +239,21 @@ export const OracleTerminal: React.FC<OracleTerminalProps> = ({
           {/* Market Stats Bar */}
           <div className="grid grid-cols-3 gap-3 text-xs font-mono text-center pt-2">
             <div className="bg-black/30 p-2.5 rounded-lg border border-white/[0.04]">
-              <span className="text-slate-500 block text-[10px]">24H Volume</span>
-              <span className="text-slate-200 font-bold">${asset.volume24h.toLocaleString()}</span>
+              <span className="text-slate-500 block text-[10px]">Underlying Benchmark</span>
+              <span className="text-slate-200 font-bold">{asset.underlying} (${asset.indexPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })})</span>
             </div>
             <div className="bg-black/30 p-2.5 rounded-lg border border-white/[0.04]">
-              <span className="text-slate-500 block text-[10px]">Funding Rate (8h)</span>
-              <span className="text-rh-green font-bold">{asset.fundingRate}%</span>
+              <span className="text-slate-500 block text-[10px]">Leverage Multiplier</span>
+              <span className="text-rh-green font-bold">{Math.abs(asset.leverage)}x {asset.isShort ? 'Inverse Short' : 'Constant Long'}</span>
             </div>
             <div className="bg-black/30 p-2.5 rounded-lg border border-white/[0.04]">
-              <span className="text-slate-500 block text-[10px]">Open Interest</span>
-              <span className="text-slate-200 font-bold">${asset.openInterest.toLocaleString()}</span>
+              <span className="text-slate-500 block text-[10px]">Robinhood Chain State</span>
+              <span className={`font-bold ${asset.tokenAddress ? 'text-rh-green' : 'text-slate-400'}`}>
+                {asset.tokenAddress ? 'Deployed On-Chain' : 'Ready to Deploy'}
+              </span>
             </div>
           </div>
+
 
         </div>
 

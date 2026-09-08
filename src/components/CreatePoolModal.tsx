@@ -11,6 +11,9 @@ import {
   Layers
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { ethers } from 'ethers';
+import artifacts from '../contracts/artifacts.json';
+import deployedConfig from '../contracts/deployedAddresses.json';
 import { LeveragedAsset, WalletState, LiquidityPool } from '../types';
 import { BridgeService } from '../services/bridge';
 import { OracleService } from '../services/oracle';
@@ -55,18 +58,42 @@ export const CreatePoolModal: React.FC<CreatePoolModalProps> = ({
   ).slice(0, 12);
 
   const handleDeployPool = async () => {
-    if (!wallet.isConnected) {
+    if (!wallet.isConnected || !(window as any).ethereum) {
       onOpenWalletModal();
+      return;
+    }
+
+    if (!selectedAsset.tokenAddress) {
+      alert(`${selectedAsset.symbol} has not been deployed on Robinhood Chain yet. Please deploy/mint it first via the Markets tab before registering a liquidity pool.`);
       return;
     }
 
     setIsDeploying(true);
 
     try {
-      await new Promise(r => setTimeout(r, 1600));
-      const bridge = BridgeService.getInstance();
-      const creator = wallet.address || '0x71C85...89A4';
+      const eth = (window as any).ethereum;
+      const provider = new ethers.BrowserProvider(eth);
+      const signer = await provider.getSigner();
+      const creator = await signer.getAddress();
+      const factoryAddress = deployedConfig?.factory || '0x31390C104d777c03B00E95967E3F2905993f947b';
+      const factory = new ethers.Contract(factoryAddress, artifacts.dAssetFactory.abi, signer);
 
+      // Deterministic pair address derived from token CA and pair config
+      const salt = ethers.keccak256(ethers.toUtf8Bytes(`${selectedAsset.symbol}-${pairedSymbol}-${feeTier}`));
+      const poolAddress = ethers.getCreate2Address(
+        factoryAddress,
+        salt,
+        ethers.keccak256(ethers.toUtf8Bytes('dAssetsUniswapV3Pool'))
+      );
+
+      const initialTvl = usdcRequired * 2;
+      const liquidityWei = ethers.parseUnits(initialTvl.toFixed(2), 18);
+
+      console.log(`Broadcasting registerLiquidityPool on Robinhood Chain for ${selectedAsset.symbol}...`);
+      const tx = await factory.registerLiquidityPool(selectedAsset.symbol, poolAddress, liquidityWei);
+      const receipt = await tx.wait();
+
+      const bridge = BridgeService.getInstance();
       const pool = bridge.seedPool(
         selectedAsset.symbol,
         amountNumber,
@@ -74,13 +101,14 @@ export const CreatePoolModal: React.FC<CreatePoolModalProps> = ({
         selectedAsset.currentNav,
         creator,
         feeTier,
-        pairedSymbol
+        pairedSymbol,
+        poolAddress,
+        receipt.hash
       );
 
-      const initialTvl = usdcRequired * 2;
       OracleService.getInstance().updateAssetMintStatus(
         selectedAsset.symbol,
-        selectedAsset.tokenAddress || '0x' + pool.poolAddress.slice(2, 42),
+        selectedAsset.tokenAddress,
         pool.poolAddress,
         initialTvl
       );
@@ -96,12 +124,20 @@ export const CreatePoolModal: React.FC<CreatePoolModalProps> = ({
         origin: { y: 0.6 },
         colors: ['#00C805', '#FF007A', '#FFFFFF']
       });
-    } catch (err) {
-      console.error('Failed to deploy Uniswap pool:', err);
+    } catch (err: any) {
+      console.error('Failed to register pool on Robinhood Chain:', err);
+      if (err.code === 4001 || err.message?.includes('rejected')) {
+        alert('Transaction was cancelled in your wallet.');
+      } else if (err.message?.includes('insufficient funds')) {
+        alert('Your wallet does not have enough ETH on Robinhood Chain to pay for transaction gas.');
+      } else {
+        alert(`Failed to register pool: ${err.reason || err.message || 'Unknown error'}`);
+      }
     } finally {
       setIsDeploying(false);
     }
   };
+
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">

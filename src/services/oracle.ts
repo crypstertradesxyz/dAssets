@@ -1,10 +1,17 @@
 import { LeveragedAsset } from '../types';
 
+interface LiveMarketTicker {
+  symbol: string;
+  price: number;
+  change24h: number;
+}
+
 export class OracleService {
   private static instance: OracleService;
   private subscribers: ((assets: LeveragedAsset[]) => void)[] = [];
   private currentAssets: LeveragedAsset[] = [];
-  private intervalId: any = null;
+  private pollIntervalId: any = null;
+  private lastFetchTime: number = 0;
 
   private constructor() {}
 
@@ -17,8 +24,12 @@ export class OracleService {
 
   public init(initialAssets: LeveragedAsset[]) {
     this.currentAssets = [...initialAssets];
-    if (!this.intervalId) {
-      this.intervalId = setInterval(() => this.tick(), 2500);
+    // Immediately fetch real market data
+    this.fetchRealMarketData();
+
+    // Poll real market prices every 30 seconds
+    if (!this.pollIntervalId) {
+      this.pollIntervalId = setInterval(() => this.fetchRealMarketData(), 30000);
     }
   }
 
@@ -30,31 +41,66 @@ export class OracleService {
     };
   }
 
-  private tick() {
-    // Pick 3-6 random assets to simulate live price fluctuations
-    const updatedCount = Math.floor(Math.random() * 4) + 3;
-    for (let i = 0; i < updatedCount; i++) {
-      const idx = Math.floor(Math.random() * this.currentAssets.length);
-      const asset = this.currentAssets[idx];
+  /**
+   * Fetches genuine real-time crypto prices and 24h changes from public crypto market feeds.
+   * Zero Math.random() - completely backed by real exchange data.
+   */
+  public async fetchRealMarketData() {
+    try {
+      // Use public Binance 24h ticker endpoint (CORS-enabled, fast, free, no API key needed)
+      const res = await fetch('https://api.binance.com/api/v3/ticker/24hr');
+      if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+      const data = await res.json();
 
-      // Jitter underlying index by -0.15% to +0.15%
-      const jitter = (Math.random() - 0.49) * 0.003;
-      const newIndexPrice = Number((asset.indexPrice * (1 + jitter)).toFixed(4));
-      
-      // Calculate leveraged NAV movement
-      const effectiveReturn = jitter * asset.leverage;
-      const newNav = Number((asset.currentNav * (1 + effectiveReturn)).toFixed(2));
-      const newChange24h = Number((asset.change24h + effectiveReturn * 20).toFixed(2));
+      if (!Array.isArray(data)) return;
 
-      this.currentAssets[idx] = {
-        ...asset,
-        indexPrice: newIndexPrice,
-        currentNav: Math.max(0.01, newNav),
-        change24h: newChange24h,
-      };
+      const priceMap = new Map<string, LiveMarketTicker>();
+      for (const item of data) {
+        if (typeof item.symbol === 'string' && item.symbol.endsWith('USDT')) {
+          const underlying = item.symbol.replace('USDT', '');
+          priceMap.set(underlying, {
+            symbol: underlying,
+            price: parseFloat(item.lastPrice),
+            change24h: parseFloat(item.priceChangePercent),
+          });
+        }
+      }
+
+      // Update currentAssets based on real prices
+      let hasChanges = false;
+      this.currentAssets = this.currentAssets.map(asset => {
+        const live = priceMap.get(asset.underlying);
+        if (!live || isNaN(live.price) || isNaN(live.change24h)) {
+          return asset;
+        }
+
+        hasChanges = true;
+        const realSpotPrice = live.price;
+        const underlying24hChange = live.change24h;
+
+        // Mathematical Leveraged Token NAV Formula:
+        // Leveraged 24h % Return = Underlying 24h % Return * Leverage
+        const leveragedChangePercent = Number((underlying24hChange * asset.leverage).toFixed(2));
+        
+        // Base NAV $1.00 scaled by leveraged percentage move
+        const newNav = Math.max(0.01, Number((asset.baseNav * (1 + leveragedChangePercent / 100)).toFixed(2)));
+
+        return {
+          ...asset,
+          indexPrice: realSpotPrice,
+          currentNav: newNav,
+          change24h: leveragedChangePercent,
+        };
+      });
+
+      this.lastFetchTime = Date.now();
+      if (hasChanges) {
+        this.subscribers.forEach(cb => cb([...this.currentAssets]));
+      }
+    } catch (err) {
+      // In isolated environments (or offline), keep the legitimate base spot prices intact
+      console.warn('Real market data sync:', err);
     }
-
-    this.subscribers.forEach(cb => cb([...this.currentAssets]));
   }
 
   public updateAssetMintStatus(symbol: string, tokenAddress: string, poolAddress?: string, poolLiquidity?: number) {
@@ -83,3 +129,4 @@ export class OracleService {
     return { hours: h, minutes: m, seconds: s };
   }
 }
+

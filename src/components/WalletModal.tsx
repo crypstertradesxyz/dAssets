@@ -16,11 +16,6 @@ export const WalletModal: React.FC<WalletModalProps> = ({ wallet, onClose }) => 
     onClose();
   };
 
-  const handleEnableDemo = () => {
-    web3.enableDemoMode();
-    onClose();
-  };
-
   const handleDisconnect = () => {
     web3.disconnect();
     onClose();
@@ -66,23 +61,19 @@ export const WalletModal: React.FC<WalletModalProps> = ({ wallet, onClose }) => 
                   <span className="text-rh-green font-bold">{wallet.networkName}</span>
                 </div>
                 <div className="flex justify-between text-slate-400">
-                  <span>USDC Balance:</span>
-                  <span className="text-white font-bold">${wallet.balanceUsdc}</span>
-                </div>
-                <div className="flex justify-between text-slate-400">
-                  <span>ETH Balance:</span>
+                  <span>Robinhood ETH:</span>
                   <span className="text-white font-bold">{wallet.balanceEth} ETH</span>
                 </div>
               </div>
 
               {/* Active Portfolio Positions */}
-              {Object.entries(wallet.holdings || {}).filter(([_, qty]) => qty > 0).length > 0 && (
+              {Object.entries(wallet.holdings || {}).filter(([_, qty]) => qty > 0).length > 0 ? (
                 <div className="bg-[#090C10] border border-white/[0.06] rounded-md p-3.5 space-y-2.5">
                   <div className="flex items-center justify-between">
                     <span className="text-[11px] font-sans font-semibold text-slate-400 uppercase tracking-wider">
                       Active Positions
                     </span>
-                    <span className="text-[10px] text-rh-green font-mono">Settled On-Chain</span>
+                    <span className="text-[10px] text-rh-green font-mono">Verified On-Chain</span>
                   </div>
                   <div className="space-y-2 pt-1 border-t border-white/[0.04]">
                     {Object.entries(wallet.holdings || {})
@@ -90,10 +81,14 @@ export const WalletModal: React.FC<WalletModalProps> = ({ wallet, onClose }) => 
                       .map(([symbol, qty]) => (
                         <div key={symbol} className="flex justify-between items-center text-xs">
                           <span className="font-bold text-white font-mono">{symbol}</span>
-                          <span className="text-slate-200 font-mono font-medium">{qty.toFixed(2)} tokens</span>
+                          <span className="text-slate-200 font-mono font-medium">{qty.toFixed(4)} tokens</span>
                         </div>
                       ))}
                   </div>
+                </div>
+              ) : (
+                <div className="bg-[#090C10] border border-white/[0.06] rounded-md p-3 text-center text-slate-500 text-[11px] font-sans">
+                  No active leveraged tokens held on Robinhood Chain.
                 </div>
               )}
 
@@ -141,23 +136,18 @@ export const WalletModal: React.FC<WalletModalProps> = ({ wallet, onClose }) => 
                 <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-white transition" />
               </button>
 
-              {/* Option 3: Quick Start Sandbox Account */}
+              {/* Option 3: Rabby Wallet */}
               <button
-                onClick={handleEnableDemo}
+                onClick={() => handleConnectInjected('rabby')}
                 className="w-full flex items-center justify-between p-3 rounded-md bg-[#090C10] hover:bg-[#121620] border border-white/[0.08] hover:border-white/[0.2] transition text-left group"
               >
                 <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 rounded bg-white/[0.08] text-white flex items-center justify-center text-xs font-bold">
-                    ⚡
+                  <div className="w-8 h-8 rounded bg-blue-500/10 text-blue-400 flex items-center justify-center text-xs font-bold font-mono">
+                    RB
                   </div>
                   <div>
-                    <div className="text-xs font-bold text-white flex items-center gap-1.5">
-                      <span>Quick Start Preview</span>
-                      <span className="text-[9px] font-mono bg-white/[0.1] text-slate-300 px-1 py-0.2 rounded">
-                        Simulated
-                      </span>
-                    </div>
-                    <div className="text-[11px] text-slate-400">Instant test wallet with mock balance</div>
+                    <div className="text-xs font-bold text-white">Rabby Wallet</div>
+                    <div className="text-[11px] text-slate-400">EVM Web3 wallet</div>
                   </div>
                 </div>
                 <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-white transition" />

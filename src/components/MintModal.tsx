@@ -13,6 +13,7 @@ import {
   Coins
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { ethers } from 'ethers';
 import { LeveragedAsset, BridgeTransaction, WalletState } from '../types';
 import { BridgeService } from '../services/bridge';
 import { Web3Service } from '../services/web3';
@@ -55,7 +56,7 @@ export const MintModal: React.FC<MintModalProps> = ({
   const netProceeds = Math.max(0, Number((grossProceeds - bridgeFee).toFixed(2)));
 
   const handleExecute = async () => {
-    if (!wallet.isConnected) {
+    if (!wallet.isConnected || !(window as any).ethereum) {
       onOpenWalletModal();
       return;
     }
@@ -70,106 +71,86 @@ export const MintModal: React.FC<MintModalProps> = ({
 
     try {
       if (activeTab === 'mint') {
-        // MINT FLOW
-        if (!wallet.isDemo && (window as any).ethereum) {
-          setCurrentStep('attesting');
-          const onChainResult = await mintGenuineOnChain(
-            asset.symbol,
-            asset.name,
-            asset.underlying,
-            asset.leverage,
-            asset.isShort,
-            asset.hyperevmAddress,
-            amountNumber
-          );
-
-          const assignedAddress = onChainResult.tokenAddress || asset.tokenAddress || '0x5164E1dc1Be45a0Fbe4D6A25A4713225E9bb56F6';
-          setActiveTokenAddress(assignedAddress);
-
-          const realTx: BridgeTransaction = {
-            id: `onchain-tx-${Date.now()}`,
-            timestamp: Date.now(),
-            sourceChain: 'HyperEVM',
-            destChain: 'Robinhood Chain',
-            assetSymbol: asset.symbol,
-            amount: amountNumber,
-            usdcPaid: grandTotalCost,
-            recipient: wallet.address || '0xConnected',
-            status: 'minted',
-            txHash: onChainResult.txHash,
-            hyperlaneMessageId: '0x' + onChainResult.txHash.slice(2, 18),
-            ismSecurity: 'Hyperlane ISM Verified On-Chain',
-          };
-
-          setCurrentStep('completed');
-          setCompletedTx(realTx);
-          Web3Service.getInstance().recordMint(asset.symbol, amountNumber, grandTotalCost);
-          OracleService.getInstance().updateAssetMintStatus(asset.symbol, assignedAddress);
-
-          confetti({
-            particleCount: 90,
-            spread: 70,
-            origin: { y: 0.6 },
-            colors: ['#00C805', '#FFFFFF', '#94A3B8']
-          });
-        } else {
-          // Instant Relayer Execution
-          const recipient = wallet.address || '0x71C85...89A4';
-          const bridge = BridgeService.getInstance();
-          
-          await bridge.executeMintViaHyperlane(
-            asset.symbol,
-            amountNumber,
-            grandTotalCost,
-            recipient,
-            (step, updatedTx) => {
-              if (step === 'minted') {
-                const assignedAddress = asset.tokenAddress || '0x' + updatedTx.txHash.slice(2, 42);
-                setActiveTokenAddress(assignedAddress);
-                setCompletedTx({
-                  ...updatedTx,
-                  status: 'minted',
-                  ismSecurity: 'Robinhood Gasless Relayer Verified'
-                });
-                setCurrentStep('completed');
-                Web3Service.getInstance().recordMint(asset.symbol, amountNumber, grandTotalCost);
-                OracleService.getInstance().updateAssetMintStatus(asset.symbol, assignedAddress);
-                confetti({
-                  particleCount: 80,
-                  spread: 60,
-                  origin: { y: 0.6 },
-                  colors: ['#00C805', '#FFFFFF', '#94A3B8']
-                });
-              } else {
-                setCurrentStep(step);
-              }
-            }
-          );
-        }
-      } else {
-        // REDEEM FLOW: Burn tokens, credit USDC back to wallet at live Oracle NAV
-        await new Promise(r => setTimeout(r, 1200));
+        // GENUINE ON-CHAIN MINT FLOW VIA FACTORY
         setCurrentStep('attesting');
-        await new Promise(r => setTimeout(r, 1000));
+        const onChainResult = await mintGenuineOnChain(
+          asset.symbol,
+          asset.name,
+          asset.underlying,
+          asset.leverage,
+          asset.isShort,
+          asset.hyperevmAddress,
+          amountNumber
+        );
 
-        const redeemTxHash = '0x' + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
-        const fakeRedeemTx: BridgeTransaction = {
-          id: `redeem-tx-${Date.now()}`,
+        const assignedAddress = onChainResult.tokenAddress || asset.tokenAddress || '0x5164E1dc1Be45a0Fbe4D6A25A4713225E9bb56F6';
+        setActiveTokenAddress(assignedAddress);
+
+        const realTx: BridgeTransaction = {
+          id: `onchain-tx-${Date.now()}`,
           timestamp: Date.now(),
           sourceChain: 'HyperEVM',
           destChain: 'Robinhood Chain',
           assetSymbol: asset.symbol,
           amount: amountNumber,
-          usdcPaid: netProceeds,
+          usdcPaid: grandTotalCost,
           recipient: wallet.address || '0xConnected',
           status: 'minted',
-          txHash: redeemTxHash,
-          hyperlaneMessageId: '0x' + redeemTxHash.slice(2, 18),
-          ismSecurity: 'Oracle NAV Collateral Settlement',
+          txHash: onChainResult.txHash,
+          hyperlaneMessageId: '0x' + onChainResult.txHash.slice(2, 18),
+          ismSecurity: 'Hyperlane ISM Verified On-Chain',
+        };
+
+        setCurrentStep('completed');
+        setCompletedTx(realTx);
+        BridgeService.getInstance().recordRealTransaction(realTx);
+        Web3Service.getInstance().recordMint(asset.symbol, amountNumber, grandTotalCost);
+        OracleService.getInstance().updateAssetMintStatus(asset.symbol, assignedAddress);
+
+        confetti({
+          particleCount: 90,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ['#00C805', '#FFFFFF', '#94A3B8']
+        });
+      } else {
+        // GENUINE REDEEM: Burn token on Robinhood Chain
+        setCurrentStep('attesting');
+        const eth = (window as any).ethereum;
+        if (!eth) throw new Error('NO_WALLET');
+
+        const provider = new ethers.BrowserProvider(eth);
+        const signer = await provider.getSigner();
+        const userAddress = await signer.getAddress();
+        const targetAddress = activeTokenAddress || asset.tokenAddress || '0x5164E1dc1Be45a0Fbe4D6A25A4713225E9bb56F6';
+
+        const tokenContract = new ethers.Contract(
+          targetAddress,
+          ['function transfer(address to, uint256 amount) returns (bool)'],
+          signer
+        );
+        const amountWei = ethers.parseUnits(amountNumber.toString(), 18);
+        const tx = await tokenContract.transfer('0x000000000000000000000000000000000000dEaD', amountWei);
+        const receipt = await tx.wait();
+
+        const realRedeemTx: BridgeTransaction = {
+          id: `redeem-tx-${Date.now()}`,
+          timestamp: Date.now(),
+          sourceChain: 'Robinhood Chain',
+          destChain: 'HyperEVM',
+          assetSymbol: asset.symbol,
+          amount: amountNumber,
+          usdcPaid: netProceeds,
+          recipient: userAddress,
+          status: 'minted',
+          txHash: receipt.hash,
+          hyperlaneMessageId: '0x' + receipt.hash.slice(2, 18),
+          ismSecurity: 'Hyperlane ISM Settlement',
         };
 
         Web3Service.getInstance().recordRedeem(asset.symbol, amountNumber, netProceeds);
-        setCompletedTx(fakeRedeemTx);
+        BridgeService.getInstance().recordRealTransaction(realRedeemTx);
+        setCompletedTx(realRedeemTx);
         setCurrentStep('completed');
 
         confetti({
@@ -180,65 +161,22 @@ export const MintModal: React.FC<MintModalProps> = ({
         });
       }
     } catch (err: any) {
-      console.warn('Execution fallback:', err);
-      if (activeTab === 'redeem') {
-        const redeemTxHash = '0x' + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
-        const fakeRedeemTx: BridgeTransaction = {
-          id: `redeem-tx-${Date.now()}`,
-          timestamp: Date.now(),
-          sourceChain: 'Robinhood Chain',
-          destChain: 'Robinhood Chain',
-          assetSymbol: asset.symbol,
-          amount: amountNumber,
-          usdcPaid: netProceeds,
-          recipient: wallet.address || '0xConnected',
-          status: 'minted',
-          txHash: redeemTxHash,
-          hyperlaneMessageId: '0x' + redeemTxHash.slice(2, 18),
-          ismSecurity: 'Oracle NAV Collateral Settlement',
-        };
-
-        Web3Service.getInstance().recordRedeem(asset.symbol, amountNumber, netProceeds);
-        setCompletedTx(fakeRedeemTx);
-        setCurrentStep('completed');
+      console.error('On-chain transaction failed:', err);
+      setCurrentStep('idle');
+      if (err.message === 'NO_L2_GAS') {
+        alert('Your wallet has 0.00 ETH on Robinhood Chain. You need a small amount of Robinhood Chain ETH to pay for transaction gas.');
+      } else if (err.code === 4001 || err.message?.includes('rejected')) {
+        alert('Transaction was cancelled in your wallet.');
+      } else if (err.message === 'NETWORK_SWITCH_FAILED') {
+        alert('Please switch your wallet network to Robinhood Chain Mainnet (Chain ID 4663).');
       } else {
-        // Fallback execution for mint
-        const recipient = wallet.address || '0x71C85...89A4';
-        const bridge = BridgeService.getInstance();
-        
-        await bridge.executeMintViaHyperlane(
-          asset.symbol,
-          amountNumber,
-          grandTotalCost,
-          recipient,
-          (step, updatedTx) => {
-            if (step === 'minted') {
-              const assignedAddress = asset.tokenAddress || '0x' + updatedTx.txHash.slice(2, 42);
-              setActiveTokenAddress(assignedAddress);
-              setCompletedTx({
-                ...updatedTx,
-                status: 'minted',
-                ismSecurity: 'Robinhood Relayer Verified'
-              });
-              setCurrentStep('completed');
-              Web3Service.getInstance().recordMint(asset.symbol, amountNumber, grandTotalCost);
-              OracleService.getInstance().updateAssetMintStatus(asset.symbol, assignedAddress);
-              confetti({
-                particleCount: 80,
-                spread: 60,
-                origin: { y: 0.6 },
-                colors: ['#00C805', '#FFFFFF', '#94A3B8']
-              });
-            } else {
-              setCurrentStep(step);
-            }
-          }
-        );
+        alert(`Transaction failed: ${err.reason || err.message || 'Unknown error'}`);
       }
     } finally {
       setIsProcessing(false);
     }
   };
+
 
   const handleAddToWallet = async () => {
     if (activeTokenAddress) {

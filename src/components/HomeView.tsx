@@ -201,7 +201,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                   <span>Automated Rebalance:</span>
                   <span className="text-slate-200">Every 8 Hours</span>
                 </div>
-                {activeAsset.tokenAddress && (
+                {activeAsset.tokenAddress ? (
                   <div className="flex items-center justify-between text-slate-400 pt-1.5 border-t border-white/[0.04]">
                     <span>Contract CA:</span>
                     <div className="flex items-center gap-1.5 font-mono">
@@ -209,8 +209,14 @@ export const HomeView: React.FC<HomeViewProps> = ({
                       <CopyButton text={activeAsset.tokenAddress} label="Copy" />
                     </div>
                   </div>
+                ) : (
+                  <div className="flex items-center justify-between text-slate-400 pt-1.5 border-t border-white/[0.04]">
+                    <span>Contract Status:</span>
+                    <span className="text-slate-400 font-mono text-[11px]">Available to Deploy</span>
+                  </div>
                 )}
               </div>
+
 
               {/* Action Button */}
               <motion.button

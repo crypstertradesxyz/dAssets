@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Search, 
   ArrowUpDown,
-  ExternalLink
+  ExternalLink,
+  CheckCircle2
 } from 'lucide-react';
 import { LeveragedAsset, AssetCategory } from '../types';
 import { CopyButton } from './CopyButton';
@@ -23,7 +24,7 @@ export const AssetTable: React.FC<AssetTableProps> = ({
 }) => {
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<AssetCategory>('all');
-  const [sortField, setSortField] = useState<'volume' | 'nav' | 'change' | 'name'>('volume');
+  const [sortField, setSortField] = useState<'spot' | 'nav' | 'change' | 'name'>('spot');
   const [sortAsc, setSortAsc] = useState(false);
 
   const categories: { key: AssetCategory; label: string }[] = [
@@ -53,7 +54,7 @@ export const AssetTable: React.FC<AssetTableProps> = ({
       })
       .sort((a, b) => {
         let diff = 0;
-        if (sortField === 'volume') diff = b.volume24h - a.volume24h;
+        if (sortField === 'spot') diff = b.indexPrice - a.indexPrice;
         else if (sortField === 'nav') diff = b.currentNav - a.currentNav;
         else if (sortField === 'change') diff = b.change24h - a.change24h;
         else if (sortField === 'name') diff = a.symbol.localeCompare(b.symbol);
@@ -61,13 +62,14 @@ export const AssetTable: React.FC<AssetTableProps> = ({
       });
   }, [assets, search, selectedCategory, sortField, sortAsc]);
 
-  const handleSort = (field: 'volume' | 'nav' | 'change' | 'name') => {
+  const handleSort = (field: 'spot' | 'nav' | 'change' | 'name') => {
     if (sortField === field) setSortAsc(!sortAsc);
     else {
       setSortField(field);
       setSortAsc(false);
     }
   };
+
 
   return (
     <motion.div 
@@ -202,13 +204,13 @@ export const AssetTable: React.FC<AssetTableProps> = ({
                     <ArrowUpDown className="w-3 h-3 text-slate-600" />
                   </div>
                 </th>
-                <th className="py-3 px-4 text-right cursor-pointer select-none hidden sm:table-cell" onClick={() => handleSort('volume')}>
+                <th className="py-3 px-4 text-right cursor-pointer select-none hidden sm:table-cell" onClick={() => handleSort('spot')}>
                   <div className="flex items-center justify-end gap-1">
-                    <span>24h Volume</span>
+                    <span>Underlying Spot</span>
                     <ArrowUpDown className="w-3 h-3 text-slate-600" />
                   </div>
                 </th>
-                <th className="py-3 px-4 text-center hidden md:table-cell">On-Chain Contract</th>
+                <th className="py-3 px-4 text-center hidden md:table-cell">Robinhood Chain Contract</th>
                 <th className="py-3 px-4 text-right">Actions</th>
               </tr>
             </thead>
@@ -264,15 +266,19 @@ export const AssetTable: React.FC<AssetTableProps> = ({
                       </span>
                     </td>
 
-                    {/* 24h Volume */}
-                    <td className="py-3.5 px-4 text-right text-slate-400 hidden sm:table-cell">
-                      ${(asset.volume24h / 1_000_000).toFixed(2)}M
+                    {/* Underlying Spot Price */}
+                    <td className="py-3.5 px-4 text-right text-slate-300 hidden sm:table-cell">
+                      ${asset.indexPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>
 
                     {/* On-Chain Contract Address (Copyable) */}
                     <td className="py-3.5 px-4 text-center font-sans hidden md:table-cell" onClick={(e) => e.stopPropagation()}>
                       {asset.tokenAddress ? (
-                        <div className="flex items-center justify-center gap-1.5">
+                        <div className="flex items-center justify-center gap-2">
+                          <span className="inline-flex items-center gap-1 text-[10px] bg-rh-green/10 text-rh-green border border-rh-green/20 px-1.5 py-0.5 rounded font-mono font-semibold">
+                            <CheckCircle2 className="w-2.5 h-2.5" />
+                            Deployed
+                          </span>
                           <a
                             href={`https://robinhoodchain.blockscout.com/address/${asset.tokenAddress}`}
                             target="_blank"
@@ -286,10 +292,11 @@ export const AssetTable: React.FC<AssetTableProps> = ({
                         </div>
                       ) : (
                         <span className="text-[11px] text-slate-500 font-mono">
-                          Ready to Deploy
+                          Available to Deploy
                         </span>
                       )}
                     </td>
+
 
                     {/* Action Buttons */}
                     <td className="py-3.5 px-4 text-right" onClick={(e) => e.stopPropagation()}>
