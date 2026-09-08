@@ -63,3 +63,10 @@ Open `http://localhost:5173` in your browser.
 npm run build
 ```
 Outputs optimized static assets to `dist/`.
+
+---
+
+## 🌐 Live Production Deployment
+
+The dAssets platform is live on Vercel:
+👉 **[https://dassets.vercel.app](https://dassets.vercel.app)**
